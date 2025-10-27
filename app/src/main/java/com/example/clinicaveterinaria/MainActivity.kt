@@ -14,8 +14,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -35,6 +40,12 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.example.clinicaveterinaria.ui.admin.ListaProfesionalesScreen
+import com.example.clinicaveterinaria.ui.profesional.HomeProfesionalScreen
+import com.example.clinicaveterinaria.ui.profesional.AgregarProfesionalScreen
 import com.example.clinicaveterinaria.ui.theme.ClinicaVeterinariaTheme
 
 class MainActivity : ComponentActivity() {
@@ -43,7 +54,42 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             ClinicaVeterinariaTheme {
-                LoginScreen()
+                val navController = rememberNavController()
+                Scaffold (
+                    bottomBar = {
+                        NavigationBar{
+                            NavigationBarItem(
+                                selected = navController.currentBackStackEntry?.destination?.route=="home",
+                                onClick = {navController.navigate("home")},
+                                label = {Text("inicio")},
+                                icon = { Icon(Icons.Filled.Home, "Inicio") }
+                            )
+                            NavigationBarItem(
+                                selected = navController.currentBackStackEntry?.destination?.route=="form",
+                                onClick = {navController.navigate("form")},
+                                label = {Text("form")},
+                                icon = { Icon(Icons.Filled.Home, "Form") }
+                            )
+                            NavigationBarItem(
+                                selected = navController.currentBackStackEntry?.destination?.route=="login",
+                                onClick = {navController.navigate("login")},
+                                label = {Text("Login")},
+                                icon = { Icon(Icons.Filled.Home, "Login") }
+                            )
+                        }
+                    }
+                ){ innerPadding ->
+                    NavHost(
+                        navController = navController,
+                        startDestination = "home",
+                        modifier = Modifier.padding(innerPadding)
+                    ){
+                        composable ("home"){ HomeProfesionalScreen() }
+                        composable ("form"){ ListaProfesionalesScreen() }
+                        composable ("login"){ LoginScreen() }
+                    }
+
+                }
             }
         }
     }
