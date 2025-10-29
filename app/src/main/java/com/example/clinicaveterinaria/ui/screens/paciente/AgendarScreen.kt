@@ -55,7 +55,7 @@ private fun generarProximos7Dias(): List<DiaCalendario> {
     }
 }
 
-// --- Simulación de Frontend: Horarios disponibles ---
+//Horarios disponibles
 private val horariosDisponibles = listOf(
     "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
     "14:00", "14:30", "15:00", "15:30"
@@ -112,14 +112,14 @@ fun AgendarScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .verticalScroll(rememberScrollState()) // Hacemos la pantalla "scrolleable"
+                .verticalScroll(rememberScrollState())
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             InfoProfesionalCard(
-                nombre = "Dr. Juan Pérez", // Simulación
-                especialidad = "Cardiología Veterinaria", // Simulación
-                fotoResId = R.drawable.perfildoctor1 // Simulación
+                nombre = "Dr. Juan Pérez",
+                especialidad = "Cardiología Veterinaria",
+                fotoResId = R.drawable.perfildoctor1
             )
             Text(
                 "Paso 1: Selecciona el día",

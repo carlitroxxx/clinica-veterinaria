@@ -120,11 +120,11 @@ fun AppNavigation() {
                 mensajeError = null
                 mensajeExito = null
                 if (fecha.isBlank() || hora.isBlank() || servicio.isBlank()) {
-                    mensajeError = "Todos los campos son obligatorios (Prueba FE)"
+                    mensajeError = "Todos los campos son obligatorios"
                 } else if (fecha == "2024-01-01") {
-                    mensajeError = "Esa fecha ya está ocupada (Prueba FE)"
+                    mensajeError = "Esa fecha ya está ocupada"
                 } else {
-                    mensajeExito = "¡Reserva confirmada! (Prueba FE)"
+                    mensajeExito = "¡Reserva confirmada!"
                 }
             }
 
