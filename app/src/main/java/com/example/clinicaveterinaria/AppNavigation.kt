@@ -1,5 +1,7 @@
 package com.example.clinicaveterinaria
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -17,14 +19,11 @@ import com.example.clinicaveterinaria.ui.screens.paciente.ProfesionalesScreen
 import com.example.clinicaveterinaria.ui.screens.paciente.MisReservasScreen
 import com.example.clinicaveterinaria.ui.screens.paciente.ReservaMock
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
 
-    // --- ¡AQUÍ ESTÁ LA LÓGICA FRONTEND! (RF-A14) ---
-    // 1. Creamos una lista "mock" de reservas.
-    // Usamos 'remember' y 'toMutableStateList' para que la UI
-    // se actualice si "cancelamos" (borramos o editamos) un item.
     val mockReservas = remember {
         mutableStateOf(
             listOf(
@@ -33,30 +32,22 @@ fun AppNavigation() {
                 ReservaMock("3", "2025-10-20", "09:30", "Dr. Juan Pérez", "Ecocardiograma", "Realizada"),
                 ReservaMock("4", "2025-10-15", "11:00", "Dra. Ana López", "Consulta Urgencia", "Cancelada")
             )
-        ).value.toMutableStateList() // <-- Importante para que la lista se pueda modificar
+        ).value.toMutableStateList()
     }
 
-    // 2. Cambia el inicio a "mis_reservas" para probarla
-    NavHost(navController = navController, startDestination = "mis_reservas") {
+    NavHost(navController = navController, startDestination = "agendar") {
 
-        // --- RUTA PARA MOSTRAR "MIS RESERVAS" (NUEVA) ---
         composable("mis_reservas") {
-
-            // Lógica de "cancelar" (RF-A11)
             val onCancelarClick: (String) -> Unit = { idReservaACancelar ->
-                // Buscamos la reserva en la lista
                 val index = mockReservas.indexOfFirst { it.id == idReservaACancelar }
                 if (index != -1) {
                     val reservaAntigua = mockReservas[index]
-                    // Creamos la reserva actualizada (estado "Cancelada")
                     val reservaActualizada = reservaAntigua.copy(estado = "Cancelada")
-                    // Reemplazamos el item en la lista
                     mockReservas[index] = reservaActualizada
                 }
             }
 
             MisReservasScreen(
-                // Ordenamos la lista por fecha y hora para RF-A10
                 reservas = mockReservas.sortedByDescending { it.fecha + it.hora },
                 onCancelarClick = onCancelarClick,
                 onBackClick = { /* navController.popBackStack() */ }
@@ -65,7 +56,6 @@ fun AppNavigation() {
 
         composable("profesionales") {
 
-            // 1. Lista "mock" (falsa) con tu modelo de datos
             val mockListaProfesionales = listOf(
                 Profesional(
                     rut = "11.111.111-1",
@@ -88,13 +78,9 @@ fun AppNavigation() {
                     telefono = "+56922222222"
                 )
             )
-
-            // 2. Llamamos a la pantalla "tonta" (Frontend)
             ProfesionalesScreen(
                 profesionales = mockListaProfesionales,
                 onProfesionalClick = { rutDelProfesional ->
-                    // Navega al perfil. (El rut no lo usamos en la ruta,
-                    // pero así es como lo pasarías al ViewModel)
                     println("Clic en RUT: $rutDelProfesional")
                     navController.navigate("perfil_profesional")
                 }
@@ -103,7 +89,6 @@ fun AppNavigation() {
 
         composable("perfil_profesional") {
 
-            // 1. Datos "mock" (falsos)
             val mockNombre = "Dr. Juan Pérez"
             val mockEspecialidad = "Cardiología Veterinaria"
             val mockBio = "Amante de los perros con 10 años de experiencia. Egresado de la Universidad de Chile."
@@ -112,22 +97,18 @@ fun AppNavigation() {
                 "Ecocardiograma (45 min)",
                 "Vacunación (15 min)"
             )
-            // IMPORTANTE: Asegúrate de que 'perfildoctor1.png' esté en 'res/drawable'
             val mockFotoId = R.drawable.perfildoctor1
 
-            // 2. Llamamos a la pantalla "tonta" (Frontend)
             PerfilProfesionalScreen(
                 nombre = mockNombre,
                 especialidad = mockEspecialidad,
                 bio = mockBio,
                 servicios = mockServicios,
-                fotoResId = mockFotoId, // <-- Pasamos la foto
+                fotoResId = mockFotoId,
                 onAgendarClick = { navController.navigate("agendar") },
                 onBackClick = { navController.popBackStack() } // <-- Lógica para "volver"
             )
         }
-
-        // --- RUTA "AGENDAR" (La dejamos para que funcione el botón) ---
         composable("agendar") {
             var fecha by remember { mutableStateOf("") }
             var hora by remember { mutableStateOf("") }

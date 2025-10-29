@@ -1,51 +1,72 @@
 package com.example.clinicaveterinaria.ui.screens.paciente
 
 import android.os.Build
+import androidx.annotation.DrawableRes
 import androidx.annotation.RequiresApi
-import androidx.compose.foundation.Image // <-- Import nuevo
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement // <-- Import nuevo
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack // <-- Import nuevo
-import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material3.Button
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton // <-- Import nuevo
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold // <-- Import nuevo
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar // <-- Import nuevo
-import androidx.compose.material3.TopAppBarDefaults // <-- Import nuevo
-import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment // <-- Import nuevo
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource // <-- Import nuevo
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.example.clinicaveterinaria.R // <-- Import nuevo (para el logo)
-import java.time.Instant
-import java.time.ZoneId
+import androidx.compose.ui.unit.sp
+import com.example.clinicaveterinaria.R
+import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.util.Locale
+
+data class DiaCalendario(
+    val fecha: LocalDate,
+    val nombreDiaSemana: String, // "Lun."
+    val numeroDia: String      // "30"
+)
+
+@RequiresApi(Build.VERSION_CODES.O)
+private fun generarProximos7Dias(): List<DiaCalendario> {
+    val locale = Locale("es", "ES")
+    val hoy = LocalDate.now()
+    return List(7) { i ->
+        val fecha = hoy.plusDays(i.toLong())
+        DiaCalendario(
+            fecha = fecha,
+            nombreDiaSemana = fecha.format(DateTimeFormatter.ofPattern("E", locale)).capitalize(locale),
+            numeroDia = fecha.format(DateTimeFormatter.ofPattern("d"))
+        )
+    }
+}
+
+// --- Simulación de Frontend: Horarios disponibles ---
+private val horariosDisponibles = listOf(
+    "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
+    "14:00", "14:30", "15:00", "15:30"
+)
+
 
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AgendarScreen(
+    // (Mantenemos los parámetros para que AppNavigation siga funcionando)
     fecha: String,
     onFechaChange: (String) -> Unit,
     hora: String,
@@ -57,56 +78,28 @@ fun AgendarScreen(
     onConfirmarClick: () -> Unit
 ) {
 
-    // --- Lógica y Estado para Pickers (Esto se queda igual) ---
-    var showDatePicker by remember { mutableStateOf(false) }
-    val datePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = Instant.now().toEpochMilli()
-    )
-    var isHoraMenuExpanded by remember { mutableStateOf(false) }
-    val horariosDisponibles = listOf(
-        "09:00", "09:30", "10:00", "10:30", "11:00", "11:30"
-    )
+    val dias = remember { generarProximos7Dias() }
 
-    // --- Composable del Diálogo (Esto se queda igual) ---
-    if (showDatePicker) {
-        DatePickerDialog(
-            onDismissRequest = { showDatePicker = false },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showDatePicker = false
-                        datePickerState.selectedDateMillis?.let { millis ->
-                            val selectedDate = Instant.ofEpochMilli(millis)
-                                .atZone(ZoneId.systemDefault()).toLocalDate()
-                            onFechaChange(selectedDate.format(DateTimeFormatter.ISO_LOCAL_DATE))
-                        }
-                    }
-                ) { Text("OK") }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) { Text("Cancelar") }
-            }
-        ) {
-            DatePicker(state = datePickerState)
-        }
+    var diaSeleccionado by remember { mutableStateOf(dias.first()) }
+
+    var horaSeleccionada by remember { mutableStateOf("") }
+
+    LaunchedEffect(diaSeleccionado) {
+        onFechaChange(diaSeleccionado.fecha.format(DateTimeFormatter.ISO_LOCAL_DATE))
+    }
+    LaunchedEffect(horaSeleccionada) {
+        onHoraChange(horaSeleccionada)
     }
 
-    // --- CAMBIO 1: Usamos Scaffold como estructura principal ---
     Scaffold(
         topBar = {
-            // --- CAMBIO 2: Añadimos una barra de título (TopAppBar) ---
             TopAppBar(
-                title = { Text("Agendar Cita") }, // <-- Título aquí
+                title = { Text("Agendar Cita") },
                 navigationIcon = {
-                    // <-- Ícono de "volver" (solo visual por ahora)
                     IconButton(onClick = { /* TODO: navController.popBackStack() */ }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Volver"
-                        )
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver")
                     }
                 },
-                // <-- Colores del tema para la barra
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     titleContentColor = MaterialTheme.colorScheme.onPrimary,
@@ -114,91 +107,53 @@ fun AgendarScreen(
                 )
             )
         }
-    ) { innerPadding -> // <-- El padding que nos da el Scaffold
-
-        // --- CAMBIO 3: La Columna ahora tiene mejor espaciado y centrado ---
+    ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding) // <-- Usamos el padding del Scaffold
-                .padding(16.dp), // <-- Añadimos nuestro padding
-            // Centra el logo
-            horizontalAlignment = Alignment.CenterHorizontally,
-            // Añade 16.dp de espacio entre cada elemento
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(innerPadding)
+                .verticalScroll(rememberScrollState()) // Hacemos la pantalla "scrolleable"
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            // --- CAMBIO 4: Añadimos el Logo ---
-            Image(
-                painter = painterResource(id = R.drawable.logo),
-                contentDescription = "Logo Clínica",
-                modifier = Modifier
-                    .height(100.dp) // Tamaño del logo
-                    .fillMaxWidth(0.7f) // Que no ocupe toda la pantalla
+            InfoProfesionalCard(
+                nombre = "Dr. Juan Pérez", // Simulación
+                especialidad = "Cardiología Veterinaria", // Simulación
+                fotoResId = R.drawable.perfildoctor1 // Simulación
             )
-
-            // --- Formulario (Misma lógica, pero ahora se ve mejor espaciado) ---
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { showDatePicker = true }
-            ) {
-                OutlinedTextField(
-                    value = fecha,
-                    onValueChange = { /* No hace nada */ },
-                    label = { Text("Fecha") },
-                    placeholder = { Text("Selecciona una fecha") },
-                    isError = mensajeError?.contains("fecha") == true,
-                    readOnly = true,
-                    trailingIcon = {
-                        Icon(
-                            imageVector = Icons.Filled.DateRange,
-                            contentDescription = "Seleccionar fecha"
-                        )
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = false,
-                )
-            }
-
-            ExposedDropdownMenuBox(
-                expanded = isHoraMenuExpanded,
-                onExpandedChange = { isHoraMenuExpanded = it },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                OutlinedTextField(
-                    value = hora,
-                    onValueChange = { /* No hace nada */ },
-                    readOnly = true,
-                    label = { Text("Hora") },
-                    placeholder = { Text("Selecciona una hora") },
-                    isError = mensajeError?.contains("hora") == true,
-                    trailingIcon = {
-                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = isHoraMenuExpanded)
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .menuAnchor()
-                )
-                ExposedDropdownMenu(
-                    expanded = isHoraMenuExpanded,
-                    onDismissRequest = { isHoraMenuExpanded = false }
-                ) {
-                    horariosDisponibles.forEach { horaSeleccionada ->
-                        DropdownMenuItem(
-                            text = { Text(horaSeleccionada) },
-                            onClick = {
-                                onHoraChange(horaSeleccionada)
-                                isHoraMenuExpanded = false
-                            }
-                        )
-                    }
+            Text(
+                "Paso 1: Selecciona el día",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+            CalendarioHorizontal(
+                dias = dias,
+                diaSeleccionado = diaSeleccionado,
+                onDiaClick = { nuevoDia ->
+                    diaSeleccionado = nuevoDia
                 }
-            }
-
+            )
+            Text(
+                "Paso 2: Selecciona la hora",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+            GrillaDeHoras(
+                horarios = horariosDisponibles,
+                horaSeleccionada = horaSeleccionada,
+                onHoraClick = { nuevaHora ->
+                    horaSeleccionada = nuevaHora
+                }
+            )
+            Text(
+                "Paso 3: Detalla el motivo",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
             OutlinedTextField(
                 value = servicio,
                 onValueChange = onServicioChange,
-                label = { Text("Servicio o Motivo") }, // <-- Texto mejorado
+                label = { Text("Servicio o Motivo de la consulta") },
                 isError = mensajeError?.contains("servicio") == true,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -209,13 +164,127 @@ fun AgendarScreen(
             ) {
                 Text("Confirmar Reserva")
             }
-
-            // --- Feedback (Se queda igual) ---
             if (mensajeError != null) {
                 Text(mensajeError, color = MaterialTheme.colorScheme.error)
             }
             if (mensajeExito != null) {
                 Text(mensajeExito, color = Color(0xFF2E7D32)) // Verde éxito
+            }
+        }
+    }
+}
+@Composable
+fun InfoProfesionalCard(
+    nombre: String,
+    especialidad: String,
+    @DrawableRes fotoResId: Int
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Image(
+                painter = painterResource(id = fotoResId),
+                contentDescription = "Foto de $nombre",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .size(60.dp)
+                    .clip(CircleShape)
+                    .border(1.dp, MaterialTheme.colorScheme.primary, CircleShape)
+            )
+            Column {
+                Text(
+                    text = nombre,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = especialidad,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+    }
+}
+@Composable
+fun CalendarioHorizontal(
+    dias: List<DiaCalendario>,
+    diaSeleccionado: DiaCalendario,
+    onDiaClick: (DiaCalendario) -> Unit
+) {
+    LazyRow(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        items(dias) { dia ->
+            val isSelected = dia == diaSeleccionado
+            val backgroundColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
+            val contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+
+            Card(
+                modifier = Modifier
+                    .width(60.dp)
+                    .clickable { onDiaClick(dia) },
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = backgroundColor)
+            ) {
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = dia.nombreDiaSemana,
+                        fontSize = 12.sp,
+                        color = contentColor
+                    )
+                    Text(
+                        text = dia.numeroDia,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = contentColor
+                    )
+                }
+            }
+        }
+    }
+}
+@Composable
+fun GrillaDeHoras(
+    horarios: List<String>,
+    horaSeleccionada: String,
+    onHoraClick: (String) -> Unit
+) {
+    LazyVerticalGrid(
+        columns = GridCells.Adaptive(minSize = 90.dp), // Se adapta al tamaño de pantalla
+        modifier = Modifier.height(200.dp), // Damos una altura fija para la grilla
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        items(horarios) { hora ->
+            val isSelected = hora == horaSeleccionada
+            val colors = if (isSelected) {
+                ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+            } else {
+                ButtonDefaults.outlinedButtonColors() // Botón con borde
+            }
+
+            Button(
+                onClick = { onHoraClick(hora) },
+                colors = colors,
+                border = if (!isSelected) ButtonDefaults.outlinedButtonBorder else null,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = hora,
+                    textAlign = TextAlign.Center
+                )
             }
         }
     }
