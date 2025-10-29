@@ -11,7 +11,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import com.example.clinicaveterinaria.data.Profesional
+import com.example.clinicaveterinaria.model.Profesional
+
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale

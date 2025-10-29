@@ -1,8 +1,5 @@
 package com.example.clinicaveterinaria.model
-
-import java.util.Date
-
-data class Profesional (
+data class Profesional(
     val rut: String,
     val nombres: String,
     val apellidos: String,

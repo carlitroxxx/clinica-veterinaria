@@ -29,6 +29,7 @@ import com.example.clinicaveterinaria.ui.theme.ClinicaVeterinariaTheme
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        com.example.clinicaveterinaria.data.Repository.init(this)
         enableEdgeToEdge()
         setContent {
             ClinicaVeterinariaTheme {

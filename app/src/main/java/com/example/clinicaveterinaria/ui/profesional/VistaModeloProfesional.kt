@@ -21,3 +21,5 @@ class VistaModeloProfesional(context: Context): ViewModel(){
         db.eliminarProfesional(rut)
     }
 }
+
+private fun MutableList<Profesional>.addAll(elements: kotlin.collections.List<kotlin.collections.Map<String, String>>) {}

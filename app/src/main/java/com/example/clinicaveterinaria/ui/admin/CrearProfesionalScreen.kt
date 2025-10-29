@@ -1,22 +1,41 @@
 package com.example.clinicaveterinaria.ui.admin
 
-import android.os.Build
 import android.util.Patterns
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.DateRange
-import androidx.compose.material3.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.Divider
+import androidx.compose.material3.DividerDefaults
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -28,18 +47,32 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import com.example.clinicaveterinaria.data.Profesional
+import androidx.navigation.NavHostController
+import com.example.clinicaveterinaria.data.Repository
+import com.example.clinicaveterinaria.model.Profesional
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
-
-private fun formatDateMillis(millis: Long?): String {
-    if (millis == null) return ""
-    val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-    sdf.timeZone = TimeZone.getTimeZone("UTC") // 👈 clave para evitar -1 día
-    return sdf.format(Date(millis))
+import com.example.clinicaveterinaria.util.RutUtils
+// ------------------------------------------------------------
+// Wrapper de ruta: conéctalo en tu NavHost como "crearProfesional"
+// ------------------------------------------------------------
+@Composable
+fun CrearProfesionalRoute(nav: NavHostController) {
+    CrearProfesionalScreen(
+        onGuardar = { p ->
+            // Inserta en BD y crea turnos por defecto L–V 10:00–16:00
+            Repository.agregarProfesional(p)
+            nav.popBackStack()
+        },
+        onCancelar = { nav.popBackStack() }
+    )
 }
+
+// ------------------------------------------------------------
+// Pantalla de Crear Profesional (tu UI, sin cambios de diseño)
+// ------------------------------------------------------------
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CrearProfesionalScreen(
@@ -55,7 +88,7 @@ fun CrearProfesionalScreen(
     var email by rememberSaveable { mutableStateOf("") }
     var telefono by rememberSaveable { mutableStateOf("") }
 
-    val rutOk = rut.trim().isNotEmpty()
+    val rutOk = RutUtils.rutEsValido(rut)
     val nombresOk = nombres.trim().isNotEmpty()
     val apellidosOk = apellidos.trim().isNotEmpty()
     val generoOk = genero.isNotEmpty()
@@ -67,15 +100,24 @@ fun CrearProfesionalScreen(
     val formOk = rutOk && nombresOk && apellidosOk && generoOk && fechaOk &&
             especialidadOk && emailOk && telefonoOk
 
-    Scaffold(topBar = { TopAppBar(title = { Text("Nuevo profesional") }) }) { inner ->
+    Scaffold{ inner ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .consumeWindowInsets(inner) // 👈 elimina el espacio reservado por el Scaffold
+                .consumeWindowInsets(inner) // elimina el espacio reservado por el Scaffold
                 .padding(8.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(bottom = 0.dp)
         ) {
+            item {
+                Column(Modifier.fillMaxWidth().padding(horizontal = 4.dp)) {
+                    Text("Nuevo profesional", style = MaterialTheme.typography.titleLarge)
+                    Spacer(Modifier.height(4.dp))
+                    HorizontalDivider(
+                        Modifier.padding(top = 8.dp)
+                    )
+                }
+            }
             item {
                 OutlinedTextField(
                     value = rut, onValueChange = { rut = it },
@@ -143,7 +185,7 @@ fun CrearProfesionalScreen(
                     Box(
                         Modifier
                             .matchParentSize()
-                            .padding(top = 9.dp,end = 48.dp)
+                            .padding(top = 9.dp, end = 48.dp)
                             .clickable { showDatePicker = true }
                     )
                 }
@@ -170,8 +212,6 @@ fun CrearProfesionalScreen(
                     }
                 }
             }
-
-
             item {
                 OutlinedTextField(
                     value = especialidad, onValueChange = { especialidad = it },
@@ -220,12 +260,21 @@ fun CrearProfesionalScreen(
                                 )
                             )
                         },
-                        enabled = formOk,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        enabled = rutOk
                     ) { Text("Guardar") }
                 }
             }
         }
     }
+}
 
+// ------------------------------------------------------------
+// Utilidad: formatear millis a "yyyy-MM-dd" sin desfase de zona
+// ------------------------------------------------------------
+private fun formatDateMillis(millis: Long?): String {
+    if (millis == null) return ""
+    val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+    sdf.timeZone = TimeZone.getTimeZone("UTC") // evita -1 día
+    return sdf.format(Date(millis))
 }
