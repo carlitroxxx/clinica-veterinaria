@@ -12,32 +12,35 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
-
 @Composable
-fun PerfilProfesionalScreen(navController: NavController, profesionalId: Int) {
-    val profesional = mockProfesionales.find { it.id == profesionalId } ?: mockProfesionales.first()
-    val servicios = listOf("Consulta General (30 min)", "Vacunación (15 min)")
+fun PerfilProfesionalScreen(
+    nombre: String,
+    especialidad: String,
+    bio: String,
+    servicios: List<String>,
+    onAgendarClick: () -> Unit
+) {
 
     Column(
         modifier = Modifier.fillMaxSize().padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(profesional.nombre, style = MaterialTheme.typography.headlineLarge)
-        Text(profesional.especialidad, style = MaterialTheme.typography.titleMedium)
+        // Muestra los datos recibidos
+        Text(nombre, style = MaterialTheme.typography.headlineLarge)
+        Text(especialidad, style = MaterialTheme.typography.titleMedium)
         Spacer(modifier = Modifier.height(16.dp))
-        Text(profesional.bio, style = MaterialTheme.typography.bodyMedium)
+        Text(bio, style = MaterialTheme.typography.bodyMedium)
         Spacer(modifier = Modifier.height(16.dp))
         Text("Servicios:", style = MaterialTheme.typography.titleMedium)
+
+        // Muestra la lista de servicios recibida
         servicios.forEach { servicio ->
             Text(servicio, style = MaterialTheme.typography.bodyMedium)
         }
         Spacer(modifier = Modifier.height(32.dp))
 
-        //Botón "Agendar"
-        Button(onClick = {
-            navController.navigate("agendar/${profesional.id}")
-        }) {
+        // Botón "Agendar"
+        Button(onClick = onAgendarClick) {
             Text("Agendar")
         }
     }
