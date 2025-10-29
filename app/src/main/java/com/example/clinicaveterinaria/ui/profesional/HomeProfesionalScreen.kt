@@ -2,6 +2,7 @@ package com.example.clinicaveterinaria.ui.profesional
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
@@ -52,45 +53,48 @@ fun HomeProfesionalScreen() {
                         .padding(vertical = 8.dp, horizontal = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Box(Modifier.weight(0.15f), contentAlignment = Alignment.CenterStart) {
-                        Icon(
-                            Icons.Default.Person,
-                            contentDescription = null,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                    Column(Modifier.weight(0.55f).padding(horizontal = 8.dp)) {
+                    Text(
+                        horaSel,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Column(Modifier.weight(0.55f).padding(end = 8.dp, start = 20.dp)) {
                         Text(
-                            pacienteSel,
+                            "  $pacienteSel",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold
                         )
                         Spacer(Modifier.height(2.dp))
                         Text(
-                            "$horaSel · $servicioSel",
+                            " · $servicioSel",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    Column(
-                        modifier = Modifier
-                            .weight(0.30f)
-                            .wrapContentWidth(Alignment.End),
-                        horizontalAlignment = Alignment.End,
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        FilledTonalButton(
-                            onClick = { mostrarDialogRegistrar = true },
-                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
-                            modifier = Modifier.widthIn(min = 84.dp)
-                        ) { Text("Registrar", maxLines = 1, softWrap = false) }
+                    Text("Nombre Mascota", style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold)
+                }
+                Spacer(Modifier.height(6.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 10.dp, start = 16.dp, end = 16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedButton(
+                        onClick = { mostrarDialogDetalle = true },
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                        modifier = Modifier.widthIn(min = 120.dp),
+                        shape = RoundedCornerShape(8.dp)
+                    ) { Text("Detalle", maxLines = 1, softWrap = false) }
 
-                        OutlinedButton(
-                            onClick = { mostrarDialogDetalle = true },
-                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
-                            modifier = Modifier.widthIn(min = 84.dp)
-                        ) { Text("Detalle", maxLines = 1, softWrap = false) }
-                    }
+                    OutlinedButton(
+                        onClick = { mostrarDialogRegistrar = true },
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.widthIn(min = 120.dp)
+                    ) { Text("Registrar", maxLines = 1, softWrap = false) }
                 }
             }
         }
@@ -135,7 +139,8 @@ private fun RegistrarAtencionDialog(
         title = { Text("Registrar atención") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Paciente: $paciente")
+                Text("Cliente: $paciente")
+                Text("Mascota: ")
                 Text("Hora: $hora")
                 Text("Servicio: $servicio")
                 // TODO: agregar Inputs (diagnóstico, observaciones, etc.)
@@ -162,7 +167,8 @@ private fun DetalleReservaDialog(
         title = { Text("Detalle de la reserva") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text("Paciente: $paciente")
+                Text("Cliente: $paciente")
+                Text("Mascota: ")
                 Text("Hora: $hora")
                 Text("Servicio: $servicio")
             }
