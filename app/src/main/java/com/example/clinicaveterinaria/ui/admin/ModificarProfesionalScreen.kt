@@ -12,7 +12,29 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.clinicaveterinaria.data.Profesional
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
+import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.*
+import androidx.compose.material.icons.outlined.DateRange
 
+
+private fun formatDateMillis(millis: Long?): String {
+    if (millis == null) return ""
+    val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+    sdf.timeZone = TimeZone.getTimeZone("UTC")
+    return sdf.format(Date(millis))
+}
+
+private fun parseDateToMillis(dateStr: String): Long? {
+    return try {
+        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        sdf.timeZone = TimeZone.getTimeZone("UTC")
+        sdf.parse(dateStr)?.time
+    } catch (_: Exception) { null }
+}
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ModificarProfesionalScreen(
@@ -95,15 +117,60 @@ fun ModificarProfesionalScreen(
                 }
             }
             item {
-                OutlinedTextField(
-                    value = fechaNac, onValueChange = { fechaNac = it },
-                    label = { Text("Fecha de nacimiento (AAAA-MM-DD)") },
-                    singleLine = true,
-                    isError = !fechaOk && fechaNac.isNotEmpty(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.fillMaxWidth()
+                var showDatePicker by remember { mutableStateOf(false) }
+                val datePickerState = rememberDatePickerState(
+                    initialSelectedDateMillis = parseDateToMillis(fechaNac) // pre-selecciona la fecha cargada
                 )
+
+                Box {
+                    OutlinedTextField(
+                        value = fechaNac,
+                        onValueChange = { /* no editable manual */ },
+                        label = { Text("Fecha de nacimiento") },
+                        singleLine = true,
+                        readOnly = true,
+                        isError = !fechaOk && fechaNac.isNotEmpty(),
+                        trailingIcon = {
+                            IconButton(onClick = { showDatePicker = true }) {
+                                Icon(Icons.Outlined.DateRange, contentDescription = "Elegir fecha")
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    // Overlay transparente: abre el picker al tocar cualquier parte del TextField,
+                    // dejando libre el área del ícono (48.dp) para no tapar su click.
+                    Box(
+                        Modifier
+                            .matchParentSize()
+                            .padding(top=9.dp,end = 48.dp)
+                            .clickable { showDatePicker = true }
+                    )
+                }
+
+                if (showDatePicker) {
+                    DatePickerDialog(
+                        onDismissRequest = { showDatePicker = false },
+                        confirmButton = {
+                            TextButton(
+                                onClick = {
+                                    fechaNac = formatDateMillis(datePickerState.selectedDateMillis)
+                                    showDatePicker = false
+                                }
+                            ) { Text("Aceptar") }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showDatePicker = false }) { Text("Cancelar") }
+                        }
+                    ) {
+                        DatePicker(
+                            state = datePickerState,
+                            showModeToggle = true
+                        )
+                    }
+                }
             }
+
             item {
                 OutlinedTextField(
                     value = especialidad, onValueChange = { especialidad = it },

@@ -1,20 +1,45 @@
 package com.example.clinicaveterinaria.ui.admin
 
+import android.os.Build
 import android.util.Patterns
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.annotation.RequiresApi
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.clinicaveterinaria.data.Profesional
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 
+private fun formatDateMillis(millis: Long?): String {
+    if (millis == null) return ""
+    val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+    sdf.timeZone = TimeZone.getTimeZone("UTC") // 👈 clave para evitar -1 día
+    return sdf.format(Date(millis))
+}
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CrearProfesionalScreen(
@@ -97,14 +122,56 @@ fun CrearProfesionalScreen(
                 }
             }
             item {
-                OutlinedTextField(
-                    value = fechaNac, onValueChange = { fechaNac = it },
-                    label = { Text("Fecha de nacimiento (AAAA-MM-DD)") }, singleLine = true,
-                    isError = !fechaOk && fechaNac.isNotEmpty(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.fillMaxWidth()
-                )
+                var showDatePicker by remember { mutableStateOf(false) }
+                val datePickerState = rememberDatePickerState()
+
+                Box {
+                    OutlinedTextField(
+                        value = fechaNac,
+                        onValueChange = { /* no editable */ },
+                        label = { Text("Fecha de nacimiento") },
+                        singleLine = true,
+                        readOnly = true,
+                        trailingIcon = {
+                            IconButton(onClick = { showDatePicker = true }) {
+                                Icon(Icons.Outlined.DateRange, contentDescription = "Elegir fecha")
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Box(
+                        Modifier
+                            .matchParentSize()
+                            .padding(top = 9.dp,end = 48.dp)
+                            .clickable { showDatePicker = true }
+                    )
+                }
+
+                if (showDatePicker) {
+                    DatePickerDialog(
+                        onDismissRequest = { showDatePicker = false },
+                        confirmButton = {
+                            TextButton(
+                                onClick = {
+                                    fechaNac = formatDateMillis(datePickerState.selectedDateMillis)
+                                    showDatePicker = false
+                                }
+                            ) { Text("Aceptar") }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showDatePicker = false }) { Text("Cancelar") }
+                        }
+                    ) {
+                        DatePicker(
+                            state = datePickerState,
+                            showModeToggle = true
+                        )
+                    }
+                }
             }
+
+
             item {
                 OutlinedTextField(
                     value = especialidad, onValueChange = { especialidad = it },
