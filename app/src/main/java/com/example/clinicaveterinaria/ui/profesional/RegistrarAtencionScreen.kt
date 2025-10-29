@@ -68,7 +68,7 @@ fun RegistrarAtencionScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun RegistrarAtencionFormDialog(
+fun RegistrarAtencionFormDialog(
     titulo: String,
     subtitulo: String? = null,
     onDismiss: () -> Unit,

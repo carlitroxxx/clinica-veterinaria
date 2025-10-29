@@ -94,7 +94,7 @@ fun HomeProfesionalScreen() {
                         contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
                         shape = RoundedCornerShape(8.dp),
                         modifier = Modifier.widthIn(min = 120.dp)
-                    ) { Text("Registrar", maxLines = 1, softWrap = false) }
+                    ) { Text("Registrar atención", maxLines = 1, softWrap = false) }
                 }
             }
         }
@@ -102,13 +102,14 @@ fun HomeProfesionalScreen() {
 
     // POPUP: Registrar atención
     if (mostrarDialogRegistrar) {
-        RegistrarAtencionDialog(
-            paciente = pacienteSel,
-            hora = horaSel,
-            servicio = servicioSel,
-            onCancelar = { mostrarDialogRegistrar = false },
-            onConfirmar = {
-                // TODO: Lógica de registro (guardar en BD/local, actualizar estado, etc.)
+        RegistrarAtencionFormDialog(
+            titulo = "Registrar atención",
+            subtitulo = "$pacienteSel • $servicioSel — $horaSel",
+            onDismiss = { mostrarDialogRegistrar = false },
+            onGuardar = { form ->
+                // Aquí guardas a BD/Repo y cierras
+                // Repository.registrarAtencion(reservaId, form)
+                // TODO: actualiza estado UI si corresponde
                 mostrarDialogRegistrar = false
             }
         )
