@@ -34,7 +34,6 @@ fun MisReservasScreen(
 ) {
     Scaffold(
         topBar = {
-            // Estilo coherente con las otras pantallas (RF-A13)
             TopAppBar(
                 title = { Text("Mis Reservas") },
                 navigationIcon = {
@@ -53,8 +52,6 @@ fun MisReservasScreen(
             )
         }
     ) { innerPadding ->
-
-        // Verificamos si la lista está vacía
         if (reservas.isEmpty()) {
             Box(
                 modifier = Modifier
@@ -70,7 +67,7 @@ fun MisReservasScreen(
                 )
             }
         } else {
-            // RF-A10: Listar reservas
+            //Listar reservas
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
@@ -93,13 +90,11 @@ fun ReservaCard(
     reserva: ReservaMock,
     onCancelarClick: () -> Unit
 ) {
-    // Lógica visual para el estado (RF-A10)
     val (statusColor, statusDecoration) = when (reserva.estado) {
         "Realizada" -> MaterialTheme.colorScheme.primary to TextDecoration.None
         "Cancelada" -> Color.Gray to TextDecoration.LineThrough
         else -> MaterialTheme.colorScheme.secondary to TextDecoration.None // "Pendiente"
     }
-
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(4.dp),
@@ -111,7 +106,6 @@ fun ReservaCard(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // --- Fila Superior: Fecha/Hora y Estado ---
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -123,7 +117,6 @@ fun ReservaCard(
                     fontWeight = FontWeight.Bold,
                     textDecoration = statusDecoration // Tacha si está cancelada
                 )
-                // "Tag" de estado con color
                 Text(
                     text = reserva.estado,
                     style = MaterialTheme.typography.bodySmall,
@@ -137,7 +130,6 @@ fun ReservaCard(
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
 
-            // --- Contenido de la Reserva ---
             Text(
                 text = reserva.servicio,
                 style = MaterialTheme.typography.bodyLarge,
@@ -150,7 +142,6 @@ fun ReservaCard(
                 textDecoration = statusDecoration
             )
 
-            // RF-A11: Permitir cancelar si está "Pendiente"
             if (reserva.estado == "Pendiente") {
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedButton(

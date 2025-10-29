@@ -66,7 +66,6 @@ private val horariosDisponibles = listOf(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AgendarScreen(
-    // (Mantenemos los parámetros para que AppNavigation siga funcionando)
     fecha: String,
     onFechaChange: (String) -> Unit,
     hora: String,
