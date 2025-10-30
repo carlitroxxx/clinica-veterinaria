@@ -267,7 +267,23 @@ class BaseDatos(context: Context) :
         }
         return writableDatabase.insert("cliente", null, cv)
     }
-
+    fun getClientePorEmail(email: String): Cliente? {
+        readableDatabase.rawQuery(
+            "SELECT rut, nombres, apellidos, email, telefono, contrasena FROM cliente WHERE LOWER(email)=LOWER(?) LIMIT 1",
+            arrayOf(email)
+        ).use { c ->
+            return if (c.moveToFirst()) {
+                com.example.clinicaveterinaria.model.Cliente(
+                    rut = c.getString(0),
+                    nombres = c.getString(1),
+                    apellidos = c.getString(2),
+                    email = c.getString(3),
+                    telefono = c.getString(4),
+                    contrasena = c.getString(5)
+                )
+            } else null
+        }
+    }
     // =========================
     // =        MASCOTA        =
     // =========================

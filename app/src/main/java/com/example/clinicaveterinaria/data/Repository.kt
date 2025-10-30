@@ -114,7 +114,10 @@ object Repository {
         )
         return if (rowId != -1L) Resultado(true, data = rowId) else Resultado(false, mensaje = "No se pudo guardar la mascota")
     }
-
+    fun obtenerClientePorEmail(email: String): Cliente? {
+        if (email.isBlank()) return null
+        return db.getClientePorEmail(email)
+    }
     // Útil si alguna pantalla necesita llamar helpers directos de BD (insertar cita, etc.)
     fun getDb(): BaseDatos = db
 }

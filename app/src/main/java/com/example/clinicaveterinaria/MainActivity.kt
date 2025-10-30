@@ -1,11 +1,15 @@
 package com.example.clinicaveterinaria
 
+import android.annotation.SuppressLint
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
@@ -34,6 +38,7 @@ import com.example.clinicaveterinaria.ui.profesional.PerfilProfesionalScreen as 
 import com.example.clinicaveterinaria.ui.cliente.PerfilProfesionalScreen as PerfilProfesionalClienteScreen
 
 class MainActivity : ComponentActivity() {
+    @SuppressLint("ComposableDestinationInComposeScope")
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -309,6 +314,28 @@ class MainActivity : ComponentActivity() {
                                                 estado = "Realizada"
                                             )
                                         )
+                                    )
+                                }
+                            }
+                            composable("clientePerfil") {
+                                val ctx = LocalContext.current
+                                val emailSesion = SesionManager.obtenerEmail(ctx)
+                                val cliente = remember(emailSesion) {
+                                    emailSesion?.let { Repository.obtenerClientePorEmail(it) }
+                                }
+
+                                if (cliente != null) {
+                                    PerfilClienteScreen(
+                                        mockNombre = "${cliente.nombres} ${cliente.apellidos}",
+                                        mockEmail = cliente.email,
+                                        mockTelefono = cliente.telefono,
+                                        onChangePasswordClick = { /* TODO: cambiar contraseña más adelante */ },
+                                        onLogoutClick = {
+                                            SesionManager.cerrarSesion(ctx)
+                                            navController.navigate("login") {
+                                                popUpTo("login") { inclusive = true }
+                                            }
+                                        }
                                     )
                                 }
                             }
