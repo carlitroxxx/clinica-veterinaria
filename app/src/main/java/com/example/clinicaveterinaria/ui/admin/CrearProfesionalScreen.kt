@@ -29,9 +29,7 @@ import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
 
-// ------------------------------------------------------------
-// Wrapper de ruta: conéctalo en tu NavHost como "crearProfesional"
-// ------------------------------------------------------------
+
 @Composable
 fun CrearProfesionalRoute(nav: NavHostController) {
     CrearProfesionalScreen(
@@ -43,9 +41,7 @@ fun CrearProfesionalRoute(nav: NavHostController) {
     )
 }
 
-// ------------------------------------------------------------
-// Pantalla de Crear Profesional (con campo de contraseña)
-// ------------------------------------------------------------
+// Pantalla de Crear Profesional
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CrearProfesionalScreen(
@@ -79,7 +75,7 @@ fun CrearProfesionalScreen(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(inner)      // 👈 evita que el contenido quede bajo barras
+                .padding(inner)
                 .padding(8.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(bottom = 0.dp)
@@ -211,7 +207,7 @@ fun CrearProfesionalScreen(
                     modifier = Modifier.fillMaxWidth()
                 )
             }
-            // -------- Contraseña inicial ----------
+            //Contraseña inicial
             item {
                 OutlinedTextField(
                     value = password,
@@ -258,9 +254,7 @@ fun CrearProfesionalScreen(
     }
 }
 
-// ------------------------------------------------------------
 // Utilidad: formatear millis a "yyyy-MM-dd" sin desfase de zona
-// ------------------------------------------------------------
 private fun formatDateMillis(millis: Long?): String {
     if (millis == null) return ""
     val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())

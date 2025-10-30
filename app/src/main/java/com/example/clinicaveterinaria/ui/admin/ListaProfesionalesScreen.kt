@@ -20,8 +20,6 @@ import com.example.clinicaveterinaria.data.Repository
 @Composable
 fun ListaProfesionalesScreen(nav: NavHostController) {
 
-    // 👇 Fuente única: lista observable del Repository (ya conectada a BD).
-    // Al volver desde "Crear / Modificar", si se mutó la lista, este composable se recompone solo.
     val lista: List<Profesional> = Repository.profesionales
 
 

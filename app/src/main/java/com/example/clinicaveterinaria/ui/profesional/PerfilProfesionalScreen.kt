@@ -23,7 +23,7 @@ import com.example.clinicaveterinaria.data.Repository
 import com.example.clinicaveterinaria.data.SesionManager
 import com.example.clinicaveterinaria.model.Profesional
 
-// ---------- UI DATA (si quieres seguir usando esta clase en callbacks externos) ----------
+//UI DATA
 data class PerfilUi(
     val nombres: String,
     val apellidos: String,
@@ -33,14 +33,12 @@ data class PerfilUi(
     val password: String? = null // null = no cambiar
 )
 
-// ======================================================================
-//  PERFIL PROFESIONAL: TODO EN UN ARCHIVO (Route + Screen + Callbacks)
-//  Con campos separados: Nombres y Apellidos
-// ======================================================================
+
+//  PERFIL PROFESIONAL
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PerfilProfesionalScreen(nav: NavHostController) {
-    // -------- Sesión / carga de datos --------
     val context = LocalContext.current
     val emailSesion = remember { SesionManager.obtenerEmail(context) }
     val tipoSesion = remember { SesionManager.obtenerTipo(context) }
@@ -52,7 +50,7 @@ fun PerfilProfesionalScreen(nav: NavHostController) {
         }
     }
 
-    // Busca profesional por email de sesión (en memoria)
+    // Busca profesional por email de sesión
     val prof: Profesional = remember(Repository.profesionales, emailSesion) {
         Repository.profesionales.firstOrNull { it.email.equals(emailSesion ?: "", ignoreCase = true) }
     } ?: run {
@@ -63,7 +61,7 @@ fun PerfilProfesionalScreen(nav: NavHostController) {
         return
     }
 
-    // -------- Estado de edición --------
+    //Estado de edición
     var editando by rememberSaveable { mutableStateOf(false) }
 
     // Copias editables (estado local) — ahora separados
@@ -77,13 +75,11 @@ fun PerfilProfesionalScreen(nav: NavHostController) {
     var pass by rememberSaveable { mutableStateOf("") }
     var pass2 by rememberSaveable { mutableStateOf("") }
 
-    // Reglas: si escribes algo en una, ambas deben cumplir (>= 4 y coincidir)
     val passTouched = pass.isNotEmpty() || pass2.isNotEmpty()
     val passLenOk = (!passTouched) || (pass.length >= 4 && pass2.length >= 4)
     val passMatchOk = (!passTouched) || (pass == pass2)
     val passValid = passLenOk && passMatchOk
 
-    // --------- UI principal (mismo diseño) ---------
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -179,7 +175,7 @@ fun PerfilProfesionalScreen(nav: NavHostController) {
                         placeholder = "Opcional"
                     )
 
-                    // 🔐 Contraseña y Confirmar contraseña (solo en modo editar)
+                    //Contraseña y Confirmar contraseña
                     if (editando) {
                         Spacer(Modifier.height(8.dp))
                         OutlinedTextField(
@@ -293,7 +289,7 @@ fun PerfilProfesionalScreen(nav: NavHostController) {
     }
 }
 
-// ---------- Helpers de UI ----------
+//Helpers de UI
 @Composable
 private fun CampoPerfil(
     label: String,

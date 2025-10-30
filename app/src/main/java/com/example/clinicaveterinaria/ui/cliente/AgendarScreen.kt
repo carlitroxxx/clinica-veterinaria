@@ -175,7 +175,7 @@ fun AgendarScreen(
                 Text("Confirmar Reserva")
             }
 
-            // --- Feedback (Mensajes) ---
+            //Feedback (Mensajes)
             if (mensajeError != null) {
                 Text(mensajeError, color = MaterialTheme.colorScheme.error)
             }

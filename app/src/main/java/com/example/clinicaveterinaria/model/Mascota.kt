@@ -1,4 +1,3 @@
-// Mascota.kt
 package com.example.clinicaveterinaria.model
 data class Mascota(
     val id_mascota: Int = 0,

@@ -64,7 +64,7 @@ fun RegistrarAtencionFormDialog(
     onGuardar: (AtencionFormData) -> Unit
 ) {
     // Estado del formulario
-    var estado by rememberSaveable { mutableStateOf("Realizada") } // Realizada | Cancelada
+    var estado by rememberSaveable { mutableStateOf("Realizada") }
     var diagnostico by rememberSaveable { mutableStateOf("") }
     var indicaciones by rememberSaveable { mutableStateOf("") }
     var motivoCancelacion by rememberSaveable { mutableStateOf("") }
@@ -75,7 +75,7 @@ fun RegistrarAtencionFormDialog(
 
     Dialog(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false) // Full screen dialog
+        properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
         Surface(
             modifier = Modifier.fillMaxSize(),

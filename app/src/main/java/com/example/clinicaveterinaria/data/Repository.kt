@@ -21,15 +21,11 @@ object Repository {
     private fun cargarProfesionalesDesdeBD() {
         _profesionales.clear()
 
-        // ⚠️ Si tu BaseDatos.listaProfesional() devuelve List<Map<String,String>>
-        // usamos este mapeo; si en tu proyecto ya devuelve List<Profesional>,
-        // cambia la línea por:  _profesionales.addAll(db.listaProfesional())
-        val filas = db.listaProfesional() // List<Map<String, String>>
+        val filas = db.listaProfesional()
         _profesionales.addAll(filas.map { mapToProfesional(it) })
     }
 
     private fun mapToProfesional(row: Map<String, String>): Profesional {
-        // Keys esperadas según el CREATE TABLE:
         // rut, nombres, apellidos, genero, fecha_nacimiento, especialidad, email, telefono
         return Profesional(
             rut = row["rut"].orEmpty(),
@@ -49,7 +45,6 @@ object Repository {
     fun obtenerProfesional(rut: String): Profesional? =
         _profesionales.firstOrNull { it.rut == rut }
 
-    /** Inserta en BD (crea turnos L–V 10–16 en BaseDatos) y refleja en la lista observable. */
     fun agregarProfesional(p: Profesional): Boolean {
         val id = db.insertarProfesional(
             p.rut, p.nombres, p.apellidos, p.genero, p.fechaNacimiento,
@@ -57,7 +52,7 @@ object Repository {
         )
         if (id == -1L) return false
 
-        // Actualiza la lista observable (evita duplicados por RUT)
+        // Actualiza la lista observable
         val idx = _profesionales.indexOfFirst { it.rut == p.rut }
         if (idx >= 0) _profesionales[idx] = p else _profesionales.add(p)
         return true
@@ -84,12 +79,12 @@ object Repository {
     }
 
 
-    //clienteee
+    //cliente
 
     data class Resultado<out T>(val ok: Boolean, val data: T? = null, val mensaje: String? = null)
 
     fun agregarCliente(c: Cliente): Resultado<Unit> {
-        // Duplicados simples por rut/email (igual que harías con profesional)
+        // Duplicados simples por rut/email
         if (db.existeClientePorRut(c.rut)) {
             return Resultado(false, mensaje = "Ya existe un cliente con ese RUT")
         }
@@ -118,6 +113,6 @@ object Repository {
         if (email.isBlank()) return null
         return db.getClientePorEmail(email)
     }
-    // Útil si alguna pantalla necesita llamar helpers directos de BD (insertar cita, etc.)
+
     fun getDb(): BaseDatos = db
 }

@@ -1,4 +1,3 @@
-// Cita.kt
 package com.example.clinicaveterinaria.model
 data class Cita(
     val id_cita: Int = 0,

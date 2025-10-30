@@ -11,14 +11,7 @@ import com.example.clinicaveterinaria.model.Cliente
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
-/**
- * SQLiteOpenHelper simple, sin capas extra. Mantiene el diseño base:
- * - profesional
- * - cliente
- * - mascota
- * - turno_profesional
- * - cita
- */
+
 class BaseDatos(context: Context) :
     SQLiteOpenHelper(context, "clinica.db", null, 1) {
 
@@ -26,7 +19,6 @@ class BaseDatos(context: Context) :
         super.onConfigure(db)
         db.setForeignKeyConstraintsEnabled(true)
     }
-    /** Turnos por defecto Lunes(0) a Viernes(4), 10:00 a 16:00, duración 30 min */
     private fun insertarTurnosDefaultParaProfesional(
         profesionalRut: String,
         duracionMin: Int = 30,
@@ -63,7 +55,7 @@ class BaseDatos(context: Context) :
             );
         """.trimIndent())
 
-        // CLIENTE (ya nace con password en v2)
+        // CLIENTE
         db.execSQL("""
             CREATE TABLE IF NOT EXISTS cliente(
                 rut TEXT PRIMARY KEY,
@@ -135,10 +127,8 @@ class BaseDatos(context: Context) :
         db.execSQL("DROP TABLE IF EXISTS profesional")
         onCreate(db)
     }
-// =========================
-    // =      PROFESIONAL      =
-    // =========================
 
+    //PROFESIONAL
     fun insertarProfesional(
         rut: String,
         nombres: String,
@@ -284,10 +274,8 @@ class BaseDatos(context: Context) :
             } else null
         }
     }
-    // =========================
-    // =        MASCOTA        =
-    // =========================
 
+    //MASCOTA
     fun insertMascota(
         clienteRut: String,
         nombre: String,
@@ -334,10 +322,7 @@ class BaseDatos(context: Context) :
         return lista
     }
 
-    // =========================
-    // =         CITA          =
-    // =========================
-
+    //CITA
     fun insertarCita(
         profesionalRut: String,
         clienteRut: String,
@@ -366,7 +351,6 @@ class BaseDatos(context: Context) :
         return writableDatabase.update("cita", cv, "id_cita=?", arrayOf(idCita.toString()))
     }
 
-    /** Citas del cliente (histórico) */
     fun listarCitasDeCliente(clienteRut: String): List<Map<String, String>> {
         val lista = mutableListOf<Map<String, String>>()
         val c = readableDatabase.rawQuery("""
@@ -398,13 +382,13 @@ class BaseDatos(context: Context) :
         return lista
     }
 
-    /** Horarios disponibles según turnos y citas existentes (excluye canceladas=liberan). */
+    //Horarios disponibles según turnos y citas existentes
     @RequiresApi(Build.VERSION_CODES.O)
     fun getHorariosDisponibles(profesionalRut: String, fecha: String): List<String> {
         // 1) Día de semana 0..6
         val diaSemana = diaSemanaDeFecha(fecha)
 
-        // 2) Para cada turno del día, generamos bloques y restamos los ocupados
+        //Para cada turno del día, generamos bloques y restamos los ocupados
         val ocupados = citasOcupadas(profesionalRut, fecha).toMutableSet()
         val disponibles = mutableListOf<String>()
 
@@ -461,7 +445,6 @@ class BaseDatos(context: Context) :
     @RequiresApi(Build.VERSION_CODES.O)
     private fun diaSemanaDeFecha(fecha: String): Int {
         val ld = LocalDate.parse(fecha, DateTimeFormatter.ISO_LOCAL_DATE)
-        // Lunes=0 .. Domingo=6 (alineado con tus turnos)
         val dow = ld.dayOfWeek.value // 1..7 (L..D)
         return (dow - 1)
     }

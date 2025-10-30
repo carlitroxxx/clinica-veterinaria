@@ -17,10 +17,7 @@ import com.example.clinicaveterinaria.data.Repository
 import com.example.clinicaveterinaria.model.Cliente
 import com.example.clinicaveterinaria.util.RutUtils
 
-// ------------------------------------------------------------
-// Wrapper de ruta (opcional)
-// Conéctalo como "crearCliente" y maneja onGuardar a tu gusto
-// ------------------------------------------------------------
+
 @Composable
 fun CrearClienteRoute(
     nav: NavHostController,
@@ -45,9 +42,7 @@ fun CrearClienteRoute(
     )
 }
 
-// ------------------------------------------------------------
 // Pantalla de Crear Cliente
-// ------------------------------------------------------------
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -78,8 +73,8 @@ fun CrearClienteScreen(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(12.dp)   // ✅ solo tu padding
-                .imePadding(),    // ✅ evita que el teclado tape los botones
+                .padding(12.dp)
+                .imePadding(),
             verticalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(bottom = 8.dp)
         ) {

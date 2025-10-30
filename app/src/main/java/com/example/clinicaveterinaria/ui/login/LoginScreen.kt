@@ -36,7 +36,7 @@ fun LoginScreen(nav: NavHostController, context: android.content.Context) {
         verticalArrangement = Arrangement.Center
     ) {
 
-        // ----------- LOGO -----------
+        //LOGO
         Image(
             painter = painterResource(id = R.drawable.logo),
             contentDescription = "Logo",
@@ -45,7 +45,7 @@ fun LoginScreen(nav: NavHostController, context: android.content.Context) {
                 .padding(bottom = 32.dp)
         )
 
-        // ----------- CORREO -----------
+        //CORREO
         OutlinedTextField(
             value = correo,
             onValueChange = { correo = it },
@@ -65,7 +65,7 @@ fun LoginScreen(nav: NavHostController, context: android.content.Context) {
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // ----------- CONTRASEÑA -----------
+        //CONTRASEÑA
         OutlinedTextField(
             value = contrasena,
             onValueChange = { contrasena = it },
@@ -86,7 +86,7 @@ fun LoginScreen(nav: NavHostController, context: android.content.Context) {
 
         Spacer(modifier = Modifier.height(28.dp))
 
-        // ----------- BOTÓN INGRESAR -----------
+        //BOTÓN INGRESAR
         Button(
             onClick = {
                 val emailTrim = correo.trim()
@@ -101,7 +101,7 @@ fun LoginScreen(nav: NavHostController, context: android.content.Context) {
                         }
                     }
 
-                    // ---- admin fijo ----
+                    //admin fijo
                     emailTrim == "admin@correo.cl" && passTrim == "1234" -> {
                         SesionManager.iniciarSesion(context, emailTrim, "admin")
                         nav.navigate("adminHome") {
@@ -109,7 +109,7 @@ fun LoginScreen(nav: NavHostController, context: android.content.Context) {
                         }
                     }
 
-                    // ---- profesional ----
+                    //profesional
                     Repository.profesionales.any { it.email == emailTrim && it.password == passTrim } -> {
                         SesionManager.iniciarSesion(context, emailTrim, "profesional")
                         nav.navigate("profesionalHome") {
@@ -151,7 +151,7 @@ fun LoginScreen(nav: NavHostController, context: android.content.Context) {
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // ----------- MENSAJE DE VALIDACIÓN -----------
+        //MENSAJE DE VALIDACIÓN
         mensaje?.let {
             Text(
                 text = it,

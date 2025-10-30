@@ -23,7 +23,7 @@ data class Profesional (
     val rut: String,
     val nombres: String,
     val apellidos: String,
-    val genero: String, // <-- Usaremos este campo
+    val genero: String,
     val fechaNacimiento: String,
     val especialidad: String,
     val email: String,
@@ -37,7 +37,7 @@ fun ProfesionalesScreen(
 ) {
     Scaffold(
         topBar = {
-            // 1. Barra de título (TopAppBar)
+            //Barra de título
             TopAppBar(
                 title = { Text("Nuestros Profesionales") },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -53,10 +53,10 @@ fun ProfesionalesScreen(
                 .padding(innerPadding),
             contentPadding = PaddingValues(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp) // Espacio entre cards
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
 
-            // 2. Logo de la clínica en la parte superior
+            //Logo de la clínica en la parte superior
             item {
                 Image(
                     painter = painterResource(id = R.drawable.logo),
@@ -68,19 +68,17 @@ fun ProfesionalesScreen(
                 )
             }
 
-            // 3. Lista de profesionales
+            //Lista de profesionales
             items(profesionales) { profesional ->
 
-                // Se elige la foto basada en el campo 'genero'
                 val fotoId = when (profesional.genero) {
                     "Femenino" -> R.drawable.perfildoctora1
                     "Masculino" -> R.drawable.perfildoctor1
-                    else -> R.drawable.logo // Una foto 'default' por si acaso
+                    else -> R.drawable.logo
                 }
 
                 ProfesionalCard(
                     profesional = profesional,
-                    // Se pasa el ID de foto correcto
                     fotoResId = fotoId,
                     onClick = {
                         onProfesionalClick(profesional.rut)
@@ -102,7 +100,7 @@ fun ProfesionalCard(
             .clickable(onClick = onClick),
         elevation = CardDefaults.cardElevation(4.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant // Color de fondo suave
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
         )
     ) {
         Row(

@@ -40,17 +40,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.clinicaveterinaria.R // <-- Importante para la foto
 
-/**
- * Pantalla de Perfil Profesional (Solo Frontend)
- *
- * @param nombre Nombre del profesional.
- * @param especialidad Especialidad principal.
- * @param bio Biografía o descripción.
- * @param servicios Lista de servicios que ofrece.
- * @param fotoResId El ID del recurso drawable (ej. R.drawable.perfildoctor1).
- * @param onAgendarClick Lambda para cuando se presiona el botón "Agendar".
- * @param onBackClick Lambda para cuando se presiona el botón "Volver" (en la TopAppBar).
- */
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PerfilProfesionalScreen(
@@ -60,16 +50,15 @@ fun PerfilProfesionalScreen(
     servicios: List<String>,
     @DrawableRes fotoResId: Int,
     onAgendarClick: () -> Unit,
-    onBackClick: () -> Unit // <-- Nueva lambda para el botón de volver
+    onBackClick: () -> Unit
 ) {
 
     Scaffold(
         topBar = {
-            // Barra de título (TopAppBar) consistente con AgendarScreen
             TopAppBar(
                 title = { Text("Perfil Profesional") },
                 navigationIcon = {
-                    IconButton(onClick = onBackClick) { // <-- Llama a la nueva lambda
+                    IconButton(onClick = onBackClick) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Volver"
@@ -95,17 +84,17 @@ fun PerfilProfesionalScreen(
             verticalArrangement = Arrangement.spacedBy(20.dp) // Espacio entre secciones
         ) {
 
-            // --- Sección de Foto y Nombre ---
+            //Sección de Foto y Nombre
             Image(
                 painter = painterResource(id = fotoResId),
                 contentDescription = "Foto de $nombre",
-                contentScale = ContentScale.Crop, // Asegura que la imagen llene el círculo
+                contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .size(150.dp)
-                    .clip(CircleShape) // <-- Recorta la imagen en forma de círculo
+                    .clip(CircleShape)
                     .border(
                         2.dp,
-                        MaterialTheme.colorScheme.primary, // <-- Borde con color del tema
+                        MaterialTheme.colorScheme.primary,
                         CircleShape
                     )
             )
@@ -119,15 +108,15 @@ fun PerfilProfesionalScreen(
             Text(
                 text = especialidad,
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.primary // <-- Color del tema
+                color = MaterialTheme.colorScheme.primary
             )
 
-            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp)) // Separador
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-            // --- Sección "Sobre mí" (Biografía) ---
+            //Sección "Sobre mí" (Biografía)
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.Start // Alinea el texto a la izquierda
+                horizontalAlignment = Alignment.Start
             ) {
                 Text(
                     text = "Sobre mí",
@@ -141,10 +130,10 @@ fun PerfilProfesionalScreen(
                 )
             }
 
-            // --- Sección "Servicios" ---
+            //Sección "Servicios"
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.Start // Alinea el texto a la izquierda
+                horizontalAlignment = Alignment.Start
             ) {
                 Text(
                     text = "Servicios Principales",
@@ -161,7 +150,7 @@ fun PerfilProfesionalScreen(
                         Icon(
                             imageVector = Icons.Filled.CheckCircle,
                             contentDescription = "Servicio",
-                            tint = MaterialTheme.colorScheme.primary, // Color del tema
+                            tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(20.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
@@ -173,9 +162,9 @@ fun PerfilProfesionalScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.weight(1f)) // <-- Empuja el botón al final
+            Spacer(modifier = Modifier.weight(1f))
 
-            // --- Botón "Agendar" ---
+            //Botón "Agendar"
             Button(
                 onClick = onAgendarClick,
                 modifier = Modifier.fillMaxWidth()

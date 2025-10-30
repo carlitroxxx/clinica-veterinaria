@@ -41,7 +41,7 @@ fun PerfilAdministradorScreen(nav: NavHostController) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(18.dp)
     ) {
-        // ---------- Avatar + título ----------
+        //Avatar + título
         Image(
             painter = painterResource(id = R.drawable.logo),
             contentDescription = "Logo empresa",
@@ -53,14 +53,14 @@ fun PerfilAdministradorScreen(nav: NavHostController) {
         )
         Text("Administrador", fontSize = 22.sp, color = Color(0xFF00AAB0), fontWeight = FontWeight.SemiBold)
 
-        // ---------- Chip de rol ----------
+        //Chip de rol
         AssistChip(
             onClick = { },
             label = { Text("Rol: Admin") },
             enabled = false
         )
 
-        // ---------- Email (solo lectura) ----------
+        //Email
         OutlinedTextField(
             value = email,
             onValueChange = {},
@@ -96,7 +96,7 @@ fun PerfilAdministradorScreen(nav: NavHostController) {
         }
         Spacer(Modifier.height(18.dp))
 
-        // ---------- Cerrar sesión ----------
+        //Cerrar sesión
         Button(
             onClick = {
                 SesionManager.cerrarSesion(context)

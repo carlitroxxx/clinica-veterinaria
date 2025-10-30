@@ -13,17 +13,16 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.clinicaveterinaria.data.Repository
 
-// 👇 Modelo de formulario (solo para pasar datos al onGuardar)
+//Modelo de formulario
 data class MascotaForm(
     val clienteRut: String,
     val nombre: String,
     val especie: String,
     val raza: String?,
-    val sexo: String?,              // "Macho" | "Hembra" | "Desconocido" | null
-    val fechaNacimiento: String?    // "AAAA-MM-DD" | null
+    val sexo: String?,
+    val fechaNacimiento: String?
 )
 
-// ---------- Route opcional para el NavHost ----------
 @Composable
 fun CrearMascotaRoute(
     nav: NavHostController,
@@ -35,7 +34,7 @@ fun CrearMascotaRoute(
         onGuardar = { form ->
             val res = Repository.agregarMascota(form)
             if (res.ok) {
-                // ✅ flujo simple: volver al home del cliente (o a Mis Reservas si prefieres)
+                //flujo simple: volver al home del cliente (o a Mis Reservas si prefieres)
                 nav.navigate("clienteProfesionales") {
                     popUpTo("clienteProfesionales") { inclusive = true }
                 }
@@ -50,7 +49,7 @@ fun CrearMascotaRoute(
 }
 
 
-// ---------- Pantalla principal ----------
+//Pantalla principal
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -80,7 +79,6 @@ fun CrearMascotaScreen(
     var expSexo by rememberSaveable { mutableStateOf(false) }
 
     Scaffold(
-        // quita paddings superior/inferior del Scaffold
         contentWindowInsets = WindowInsets(0)
     ) {
         LazyColumn(
@@ -126,7 +124,7 @@ fun CrearMascotaScreen(
                 )
             }
 
-            // Especie (dropdown simple)
+            // Especie
             item {
                 ExposedDropdownMenuBox(
                     expanded = expEspecie,
@@ -175,7 +173,7 @@ fun CrearMascotaScreen(
                 )
             }
 
-            // Sexo (dropdown opcional)
+            // Sexo
             item {
                 ExposedDropdownMenuBox(
                     expanded = expSexo,

@@ -1,4 +1,3 @@
-// TurnoProfesional.kt
 package com.example.clinicaveterinaria.model
 data class TurnoProfesional(
     val id_turno: Int = 0,

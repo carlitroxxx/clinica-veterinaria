@@ -22,7 +22,7 @@ data class ReservaMock(
     val hora: String,
     val profesional: String,
     val servicio: String,
-    val estado: String // "Pendiente", "Realizada", "Cancelada"
+    val estado: String
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -93,7 +93,7 @@ fun ReservaCard(
     val (statusColor, statusDecoration) = when (reserva.estado) {
         "Realizada" -> MaterialTheme.colorScheme.primary to TextDecoration.None
         "Cancelada" -> Color.Gray to TextDecoration.LineThrough
-        else -> MaterialTheme.colorScheme.secondary to TextDecoration.None // "Pendiente"
+        else -> MaterialTheme.colorScheme.secondary to TextDecoration.None
     }
     Card(
         modifier = Modifier.fillMaxWidth(),

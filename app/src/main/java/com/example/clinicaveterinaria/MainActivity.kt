@@ -54,11 +54,11 @@ class MainActivity : ComponentActivity() {
 
                 Repository.init(context)
 
-                // 🔹 Estado reactivo de sesión
+                //Estado reactivo de sesión
                 var sesionActiva by remember { mutableStateOf(SesionManager.haySesionActiva(context)) }
                 var tipoSesion by remember { mutableStateOf(SesionManager.obtenerTipo(context)) }
 
-                // 🔹 Observa cambios de ruta: actualiza si cerraste sesión
+                //Observa cambios de ruta: actualiza si cerraste sesión
                 LaunchedEffect(currentRoute) {
                     sesionActiva = SesionManager.haySesionActiva(context)
                     tipoSesion = SesionManager.obtenerTipo(context)
@@ -137,12 +137,12 @@ class MainActivity : ComponentActivity() {
                         modifier = Modifier.padding(innerPadding)
                     ) {
 
-                        // --- Login ---
+                        //Login
                         composable("login") {
                             LoginScreen(navController, context)
                         }
 
-                        // --- Admin ---
+                        //Admin
                         composable("adminHome") { ListaProfesionalesScreen(navController) }
                         composable("perfilAdmin") { PerfilAdministradorScreen(navController) }
                         composable("crearProfesional") {
@@ -164,9 +164,6 @@ class MainActivity : ComponentActivity() {
                                 nav = navController,
                                 clienteRut = rutCliente,
                                 onGuardarMascota = { form ->
-                                    // SOLO FRONT por ahora.
-                                    // Aquí luego guardarías en BD; de momento, puedes mostrar un snackbar o navegar:
-                                    // navController.popBackStack()
                                 }
                             )
                         }
@@ -199,11 +196,11 @@ class MainActivity : ComponentActivity() {
                             }
                         }
 
-                        // --- Profesional ---
+                        //Profesional
                         composable("profesionalHome") { HomeProfesionalScreen() }
                         composable("perfilProfesional") { PerfilProfesionalDoctorScreen(navController) }
 
-                        // --- Cliente ---
+                        //Cliente
                         composable("clienteProfesionales") {
                             val profesionales = remember { ClienteMockData.profesionales }
                             ProfesionalesScreen(
@@ -276,7 +273,7 @@ class MainActivity : ComponentActivity() {
                                 onBackClick = { navController.popBackStack() }
                             )
                         }
-                        // --- Cliente: crear cuenta ---
+                        //Cliente: crear cuenta
                         composable("crearCliente") {
                             CrearClienteRoute(nav = navController)
                         }
@@ -339,8 +336,6 @@ class MainActivity : ComponentActivity() {
                                     )
                                 }
                             }
-
-                            // ✅ Deja SOLO una llamada (esta)
                             MisReservasScreen(
                                 reservas = reservas,
                                 onCancelarClick = { reserva: ReservaMock ->
@@ -383,7 +378,6 @@ class MainActivity : ComponentActivity() {
                                 fechaNacimiento = fechaNac,
                                 onFechaNacimientoChange = { fechaNac = it },
                                 onGuardarClick = {
-                                    // Solo front por ahora
                                 },
                                 onBackClick = { navController.popBackStack() }
                             )

@@ -41,13 +41,12 @@ fun HomeProfesionalScreen() {
     var filtroSeleccionado by rememberSaveable { mutableStateOf(opciones.first()) }
     var dropdownAbierto by remember { mutableStateOf(false) }
 
-    // 4) Filtrado
     val reservasFiltradas = remember(filtroSeleccionado, reservas) {
         if (filtroSeleccionado == "TODAS") reservas
         else reservas.filter { it.estado.name == filtroSeleccionado }
     }
 
-    // Variables para los diálogos (ejemplo sencillo con la 1ª reserva filtrada)
+    // Variables para los diálogos
     val reservaSel = reservasFiltradas.firstOrNull()
     val pacienteSel = reservaSel?.paciente ?: "—"
     val horaSel = reservaSel?.hora ?: "—"
@@ -63,7 +62,6 @@ fun HomeProfesionalScreen() {
             modifier = Modifier.padding(16.dp),
             style = MaterialTheme.typography.titleLarge
         )
-        // agregar funcion para fecha actual y tambien icon
         ExposedDropdownMenuBox(
             expanded = dropdownAbierto,
             onExpandedChange = { dropdownAbierto = !dropdownAbierto },
@@ -106,7 +104,6 @@ fun HomeProfesionalScreen() {
         ) {
 
             if (reservasFiltradas.isEmpty()) {
-                // Estado vacío
                 Text(
                     "No hay reservas",
                     style = MaterialTheme.typography.bodyMedium,
@@ -143,7 +140,6 @@ fun HomeProfesionalScreen() {
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
-                            // Estado a la derecha (opcional)
                             AssistChip(
                                 onClick = {},
                                 label = { Text(r.estado.name) }
