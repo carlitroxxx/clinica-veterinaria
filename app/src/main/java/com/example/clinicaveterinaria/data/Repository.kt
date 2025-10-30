@@ -40,7 +40,9 @@ object Repository {
             fechaNacimiento = row["fecha_nacimiento"].orEmpty(),
             especialidad = row["especialidad"].orEmpty(),
             email = row["email"].orEmpty(),
-            telefono = row["telefono"].orEmpty()
+            telefono = row["telefono"].orEmpty(),
+            password = row["password"] ?: "1234",
+            bio = row["bio"] ?: ""
         )
     }
 
@@ -51,7 +53,7 @@ object Repository {
     fun agregarProfesional(p: Profesional): Boolean {
         val id = db.insertarProfesional(
             p.rut, p.nombres, p.apellidos, p.genero, p.fechaNacimiento,
-            p.especialidad, p.email, p.telefono
+            p.especialidad, p.email, p.telefono, p.password
         )
         if (id == -1L) return false
 
@@ -60,11 +62,13 @@ object Repository {
         if (idx >= 0) _profesionales[idx] = p else _profesionales.add(p)
         return true
     }
-
+    fun validarProfesional(email: String, password: String): Boolean {
+        return db.validarProfesional(email, password)
+    }
     fun actualizarProfesional(p: Profesional): Boolean {
         val filas = db.actualizarProfesional(
             p.rut, p.nombres, p.apellidos, p.genero, p.fechaNacimiento,
-            p.especialidad, p.email, p.telefono
+            p.especialidad, p.email, p.telefono, p.password
         )
         if (filas > 0) {
             val idx = _profesionales.indexOfFirst { it.rut == p.rut }

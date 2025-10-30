@@ -1,26 +1,29 @@
 package com.example.clinicaveterinaria.ui.admin
 
 import android.util.Patterns
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.DateRange
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.example.clinicaveterinaria.model.Profesional
-
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
-import androidx.compose.foundation.clickable
-import androidx.compose.material.icons.*
-import androidx.compose.material.icons.outlined.DateRange
-
 
 private fun formatDateMillis(millis: Long?): String {
     if (millis == null) return ""
@@ -36,6 +39,7 @@ private fun parseDateToMillis(dateStr: String): Long? {
         sdf.parse(dateStr)?.time
     } catch (_: Exception) { null }
 }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ModificarProfesionalScreen(
@@ -52,6 +56,8 @@ fun ModificarProfesionalScreen(
     var especialidad by rememberSaveable { mutableStateOf(profesional.especialidad) }
     var email by rememberSaveable { mutableStateOf(profesional.email) }
     var telefono by rememberSaveable { mutableStateOf(profesional.telefono) }
+    var password by rememberSaveable { mutableStateOf(profesional.password) }
+    var showPass by rememberSaveable { mutableStateOf(false) }
 
     val nombresOk = nombres.trim().isNotEmpty()
     val apellidosOk = apellidos.trim().isNotEmpty()
@@ -60,19 +66,23 @@ fun ModificarProfesionalScreen(
     val especialidadOk = especialidad.trim().isNotEmpty()
     val emailOk = Patterns.EMAIL_ADDRESS.matcher(email.trim()).matches()
     val telefonoOk = telefono.trim().length in 8..12 && telefono.all { it.isDigit() }
-    val formOk = nombresOk && apellidosOk && generoOk && fechaOk && especialidadOk && emailOk && telefonoOk
+    val passwordOk = password.length in 4..20
+
+    val formOk = nombresOk && apellidosOk && generoOk && fechaOk &&
+            especialidadOk && emailOk && telefonoOk && passwordOk
 
     Scaffold(topBar = { TopAppBar(title = { Text("Editar profesional") }) }) { inner ->
         var openGenero by remember { mutableStateOf(false) }
+
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .consumeWindowInsets(inner) // 👈 elimina el espacio reservado por el Scaffold
+                .padding(inner) // ✅ evita que lo tape el TopBar
                 .padding(8.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(bottom = 0.dp)
         ) {
-            item{
+            item {
                 OutlinedTextField(
                     value = rut,
                     onValueChange = {},
@@ -82,7 +92,7 @@ fun ModificarProfesionalScreen(
                     modifier = Modifier.fillMaxWidth()
                 )
             }
-            item{
+            item {
                 OutlinedTextField(
                     value = nombres, onValueChange = { nombres = it },
                     label = { Text("Nombres") }, singleLine = true,
@@ -90,7 +100,7 @@ fun ModificarProfesionalScreen(
                     modifier = Modifier.fillMaxWidth()
                 )
             }
-            item{
+            item {
                 OutlinedTextField(
                     value = apellidos, onValueChange = { apellidos = it },
                     label = { Text("Apellidos") }, singleLine = true,
@@ -117,10 +127,11 @@ fun ModificarProfesionalScreen(
                     }
                 }
             }
+
             item {
                 var showDatePicker by remember { mutableStateOf(false) }
                 val datePickerState = rememberDatePickerState(
-                    initialSelectedDateMillis = parseDateToMillis(fechaNac) // pre-selecciona la fecha cargada
+                    initialSelectedDateMillis = parseDateToMillis(fechaNac)
                 )
 
                 Box {
@@ -139,12 +150,10 @@ fun ModificarProfesionalScreen(
                         modifier = Modifier.fillMaxWidth()
                     )
 
-                    // Overlay transparente: abre el picker al tocar cualquier parte del TextField,
-                    // dejando libre el área del ícono (48.dp) para no tapar su click.
                     Box(
                         Modifier
                             .matchParentSize()
-                            .padding(top=9.dp,end = 48.dp)
+                            .padding(top = 9.dp, end = 48.dp)
                             .clickable { showDatePicker = true }
                     )
                 }
@@ -198,6 +207,32 @@ fun ModificarProfesionalScreen(
                     modifier = Modifier.fillMaxWidth()
                 )
             }
+
+            // -------- Contraseña (editable) ----------
+            item {
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { password = it },
+                    label = { Text("Contraseña") },
+                    singleLine = true,
+                    visualTransformation = if (showPass) VisualTransformation.None else PasswordVisualTransformation(),
+                    trailingIcon = {
+                        IconButton(onClick = { showPass = !showPass }) {
+                            Icon(
+                                imageVector = if (showPass) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+                                contentDescription = if (showPass) "Ocultar" else "Mostrar"
+                            )
+                        }
+                    },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    isError = !passwordOk && password.isNotEmpty(),
+                    supportingText = {
+                        if (!passwordOk && password.isNotEmpty()) Text("Mínimo 4 caracteres")
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -217,7 +252,8 @@ fun ModificarProfesionalScreen(
                                     fechaNacimiento = fechaNac,
                                     especialidad = especialidad.trim(),
                                     email = email.trim(),
-                                    telefono = telefono.trim()
+                                    telefono = telefono.trim(),
+                                    password = password.trim() // 👈 actualiza contraseña
                                 )
                             )
                         },
@@ -226,10 +262,6 @@ fun ModificarProfesionalScreen(
                     ) { Text("Guardar cambios") }
                 }
             }
-
-
-
-
         }
     }
 }

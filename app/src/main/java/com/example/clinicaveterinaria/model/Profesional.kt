@@ -7,5 +7,7 @@ data class Profesional(
     val fechaNacimiento: String,
     val especialidad: String,
     val email: String,
-    val telefono: String
+    val telefono: String,
+    val password: String,
+    val bio: String = ""
 )

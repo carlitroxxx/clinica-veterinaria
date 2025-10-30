@@ -52,7 +52,8 @@ class BaseDatos(context: Context) :
                 fecha_nacimiento TEXT NOT NULL,     -- "YYYY-MM-DD"
                 especialidad TEXT NOT NULL,
                 email TEXT NOT NULL,
-                telefono TEXT NOT NULL
+                telefono TEXT NOT NULL,
+                password TEXT NOT NULL DEFAULT '1234'
             );
         """.trimIndent())
 
@@ -140,7 +141,8 @@ class BaseDatos(context: Context) :
         fechaNacimiento: String,
         especialidad: String,
         email: String,
-        telefono: String
+        telefono: String,
+        password: String = "1234"
     ): Long {
         val db = writableDatabase
         var rowId = -1L
@@ -155,6 +157,7 @@ class BaseDatos(context: Context) :
                 put("especialidad", especialidad)
                 put("email", email)
                 put("telefono", telefono)
+                put("password", password)
             }
             rowId = db.insert("profesional", null, cv)
 
@@ -178,7 +181,8 @@ class BaseDatos(context: Context) :
         fechaNacimiento: String,
         especialidad: String,
         email: String,
-        telefono: String
+        telefono: String,
+        password: String
     ): Int {
         val cv = ContentValues().apply {
             put("nombres", nombres)
@@ -188,6 +192,8 @@ class BaseDatos(context: Context) :
             put("especialidad", especialidad)
             put("email", email)
             put("telefono", telefono)
+            put("password", password)
+
         }
         return writableDatabase.update("profesional", cv, "rut=?", arrayOf(rut))
     }
@@ -196,7 +202,7 @@ class BaseDatos(context: Context) :
         val lista = mutableListOf<Map<String, String>>()
         val c: Cursor = readableDatabase.rawQuery(
             """
-            SELECT rut, nombres, apellidos, genero, fecha_nacimiento, especialidad, email, telefono 
+            SELECT rut, nombres, apellidos, genero, fecha_nacimiento, especialidad, email, telefono, password
             FROM profesional
             ORDER BY apellidos, nombres
             """.trimIndent(), null
@@ -212,6 +218,7 @@ class BaseDatos(context: Context) :
                     "especialidad" to cursor.getString(5),
                     "email" to cursor.getString(6),
                     "telefono" to cursor.getString(7),
+                    "password" to (cursor.getString(8) ?: "1234")
                 )
                 lista.add(item)
             }
@@ -397,6 +404,13 @@ class BaseDatos(context: Context) :
         return writableDatabase.update(
             "cita", cv, "id_cita=?", arrayOf(idCita.toString())
         )
+    }
+    fun validarProfesional(email: String, password: String): Boolean {
+        val c = readableDatabase.rawQuery(
+            "SELECT 1 FROM profesional WHERE email=? AND password=? LIMIT 1",
+            arrayOf(email, password)
+        )
+        c.use { return it.moveToFirst() }
     }
 
     /** Agenda de un profesional en una fecha (para tu pantalla "Agenda de hoy") */

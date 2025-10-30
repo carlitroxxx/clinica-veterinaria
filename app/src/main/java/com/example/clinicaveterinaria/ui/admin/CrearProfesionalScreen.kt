@@ -2,40 +2,12 @@ package com.example.clinicaveterinaria.ui.admin
 
 import android.util.Patterns
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.consumeWindowInsets
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.DateRange
-import androidx.compose.material3.Button
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.Divider
-import androidx.compose.material3.DividerDefaults
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.*
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -46,15 +18,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.clinicaveterinaria.data.Repository
 import com.example.clinicaveterinaria.model.Profesional
+import com.example.clinicaveterinaria.util.RutUtils
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
-import com.example.clinicaveterinaria.util.RutUtils
+
 // ------------------------------------------------------------
 // Wrapper de ruta: conéctalo en tu NavHost como "crearProfesional"
 // ------------------------------------------------------------
@@ -62,7 +36,6 @@ import com.example.clinicaveterinaria.util.RutUtils
 fun CrearProfesionalRoute(nav: NavHostController) {
     CrearProfesionalScreen(
         onGuardar = { p ->
-            // Inserta en BD y crea turnos por defecto L–V 10:00–16:00
             Repository.agregarProfesional(p)
             nav.popBackStack()
         },
@@ -71,7 +44,7 @@ fun CrearProfesionalRoute(nav: NavHostController) {
 }
 
 // ------------------------------------------------------------
-// Pantalla de Crear Profesional (tu UI, sin cambios de diseño)
+// Pantalla de Crear Profesional (con campo de contraseña)
 // ------------------------------------------------------------
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -87,6 +60,7 @@ fun CrearProfesionalScreen(
     var especialidad by rememberSaveable { mutableStateOf("") }
     var email by rememberSaveable { mutableStateOf("") }
     var telefono by rememberSaveable { mutableStateOf("") }
+    var password by rememberSaveable { mutableStateOf("") } //
 
     val rutOk = RutUtils.rutEsValido(rut)
     val nombresOk = nombres.trim().isNotEmpty()
@@ -96,15 +70,16 @@ fun CrearProfesionalScreen(
     val especialidadOk = especialidad.trim().isNotEmpty()
     val emailOk = Patterns.EMAIL_ADDRESS.matcher(email.trim()).matches()
     val telefonoOk = telefono.trim().length in 8..12 && telefono.all { it.isDigit() }
+    val passwordOk = password.length in 4..20
 
     val formOk = rutOk && nombresOk && apellidosOk && generoOk && fechaOk &&
-            especialidadOk && emailOk && telefonoOk
+            especialidadOk && emailOk && telefonoOk && passwordOk
 
-    Scaffold{ inner ->
+    Scaffold { inner ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .consumeWindowInsets(inner) // elimina el espacio reservado por el Scaffold
+                .padding(inner)      // 👈 evita que el contenido quede bajo barras
                 .padding(8.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(bottom = 0.dp)
@@ -113,9 +88,7 @@ fun CrearProfesionalScreen(
                 Column(Modifier.fillMaxWidth().padding(horizontal = 4.dp)) {
                     Text("Nuevo profesional", style = MaterialTheme.typography.titleLarge)
                     Spacer(Modifier.height(4.dp))
-                    HorizontalDivider(
-                        Modifier.padding(top = 8.dp)
-                    )
+                    HorizontalDivider(Modifier.padding(top = 8.dp))
                 }
             }
             item {
@@ -238,6 +211,20 @@ fun CrearProfesionalScreen(
                     modifier = Modifier.fillMaxWidth()
                 )
             }
+            // -------- Contraseña inicial ----------
+            item {
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { password = it },
+                    label = { Text("Contraseña") },
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    isError = !passwordOk && password.isNotEmpty(),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -256,12 +243,14 @@ fun CrearProfesionalScreen(
                                     fechaNacimiento = fechaNac,
                                     especialidad = especialidad.trim(),
                                     email = email.trim(),
-                                    telefono = telefono.trim()
+                                    telefono = telefono.trim(),
+                                    password = password.trim(),
+                                    bio = ""
                                 )
                             )
                         },
                         modifier = Modifier.weight(1f),
-                        enabled = rutOk
+                        enabled = formOk
                     ) { Text("Guardar") }
                 }
             }
@@ -275,6 +264,6 @@ fun CrearProfesionalScreen(
 private fun formatDateMillis(millis: Long?): String {
     if (millis == null) return ""
     val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-    sdf.timeZone = TimeZone.getTimeZone("UTC") // evita -1 día
+    sdf.timeZone = TimeZone.getTimeZone("UTC")
     return sdf.format(Date(millis))
 }
