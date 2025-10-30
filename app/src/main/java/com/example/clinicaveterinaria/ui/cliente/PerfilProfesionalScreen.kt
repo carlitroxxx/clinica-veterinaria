@@ -1,4 +1,4 @@
-package com.example.clinicaveterinaria.ui.screens.paciente
+package com.example.clinicaveterinaria.ui.cliente
 
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
@@ -39,7 +39,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.clinicaveterinaria.R
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -175,3 +174,4 @@ fun PerfilProfesionalScreen(
         }
     }
 }
+
