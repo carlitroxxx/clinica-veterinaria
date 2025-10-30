@@ -211,4 +211,42 @@ object Repository {
     }
 
     fun getDb(): BaseDatos = db
+
+    // Para buscar al profesional por email (sesión)
+    fun obtenerProfesionalPorEmail(email: String): com.example.clinicaveterinaria.model.Profesional? =
+        try {
+            // Si ya tienes algo similar, usa el tuyo.
+            // Aquí recorremos la lista (o implementa un SELECT por email en tu BD si prefieres)
+            obtenerProfesionales().firstOrNull { it.email.equals(email, ignoreCase = true) }
+        } catch (_: Exception) { null }
+
+    // DTO para la UI de profesional (hoy)
+    data class ReservaProfesional(
+        val id: Long,
+        val hora: String,
+        val servicio: String,
+        val estado: String,           // "Pendiente" | "Realizada" | "Cancelada"
+        val clienteNombre: String,    // "Nombres Apellidos"
+        val clienteRut: String
+    )
+
+    fun obtenerReservasProfesionalEn(rutProfesional: String, fecha: String): List<ReservaProfesional> {
+        return try {
+            val crudas = db.getReservasDeProfesionalEn(rutProfesional, fecha)
+            crudas.map { r ->
+                val nom = db.getClienteNombrePorRut(r.clienteRut)?.let { "${it.first} ${it.second}" } ?: r.clienteRut
+                ReservaProfesional(
+                    id = r.id,
+                    hora = r.hora,
+                    servicio = r.servicio,
+                    estado = r.estado,           // ya viene como texto
+                    clienteNombre = nom,
+                    clienteRut = r.clienteRut
+                )
+            }
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
 }

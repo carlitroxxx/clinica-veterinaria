@@ -11,15 +11,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.clinicaveterinaria.data.Repository
+import com.example.clinicaveterinaria.data.SesionManager
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 
 enum class EstadoAtencion { PENDIENTE, REALIZADA, CANCELADA }
+
 data class ReservaUi(
-    val id: Int,
+    val id: Long,
     val hora: String,
     val paciente: String,
     val servicio: String,
-    val mascota: String,
+    val mascota: String = "—",
     val estado: EstadoAtencion
 )
 @OptIn(ExperimentalMaterial3Api::class)
@@ -28,22 +34,48 @@ fun HomeProfesionalScreen() {
     // Estados para mostrar/ocultar los popups
     var mostrarDialogRegistrar by remember { mutableStateOf(false) }
     var mostrarDialogDetalle by remember { mutableStateOf(false) }
-
-    val reservas = remember {
-        listOf(
-            ReservaUi(1, "09:30", "Juan Pérez", "Consulta General", "Luna", EstadoAtencion.PENDIENTE),
-            ReservaUi(2, "10:00", "María Díaz", "Control", "Toby", EstadoAtencion.REALIZADA),
-            ReservaUi(3, "10:30", "Pedro León", "Vacunación", "Mika", EstadoAtencion.CANCELADA),
-            ReservaUi(4, "11:00", "Ana Soto", "Desparasitación", "Coco", EstadoAtencion.PENDIENTE),
-        )
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val emailSesion = remember { SesionManager.obtenerEmail(ctx) }
+    val profesional = remember(emailSesion) {
+        emailSesion?.let { Repository.obtenerProfesionalPorEmail(it) }
     }
+    val rutProfesional = profesional?.rut
+
+    val hoy = remember {
+        SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
+    }
+    var reservasUi by remember { mutableStateOf<List<ReservaUi>>(emptyList()) }
+    var cargando by remember { mutableStateOf(true) }
+
+    LaunchedEffect(rutProfesional, hoy) {
+        cargando = true
+        reservasUi = if (rutProfesional != null) {
+            Repository.obtenerReservasProfesionalEn(rutProfesional, hoy).map { r ->
+                val estadoEnum = when (r.estado.trim().lowercase()) {
+                    "realizada" -> EstadoAtencion.REALIZADA
+                    "cancelada" -> EstadoAtencion.CANCELADA
+                    else -> EstadoAtencion.PENDIENTE
+                }
+                ReservaUi(
+                    id = r.id,
+                    hora = r.hora,
+                    paciente = r.clienteNombre,
+                    servicio = r.servicio,
+                    estado = estadoEnum
+                )
+            }
+        } else emptyList()
+        cargando = false
+    }
+
     val opciones = listOf("TODAS", "PENDIENTE", "REALIZADA", "CANCELADA")
     var filtroSeleccionado by rememberSaveable { mutableStateOf(opciones.first()) }
     var dropdownAbierto by remember { mutableStateOf(false) }
 
-    val reservasFiltradas = remember(filtroSeleccionado, reservas) {
-        if (filtroSeleccionado == "TODAS") reservas
-        else reservas.filter { it.estado.name == filtroSeleccionado }
+
+    val reservasFiltradas = remember(filtroSeleccionado, reservasUi) {
+        if (filtroSeleccionado == "TODAS") reservasUi
+        else reservasUi.filter { it.estado.name == filtroSeleccionado }
     }
 
     // Variables para los diálogos
@@ -58,7 +90,7 @@ fun HomeProfesionalScreen() {
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text(
-            "Agenda de hoy Dom 26 oct 2025",
+            "Agenda de hoy $hoy",
             modifier = Modifier.padding(16.dp),
             style = MaterialTheme.typography.titleLarge
         )
@@ -103,74 +135,81 @@ fun HomeProfesionalScreen() {
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
 
-            if (reservasFiltradas.isEmpty()) {
-                Text(
-                    "No hay reservas",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }else {
-                reservasFiltradas.forEach { r ->
-                    Card {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 8.dp, horizontal = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                r.hora,
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                            Column(
-                                Modifier
-                                    .weight(0.55f)
-                                    .padding(end = 8.dp, start = 20.dp)
+            when{
+                cargando -> {
+                    Text("Cargando reservas...", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                reservasFiltradas.isEmpty() ->{
+                    Text(
+                        "No hay reservas",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }else -> {
+                    reservasFiltradas.forEach { r ->
+                        Card {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp, horizontal = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    "  ${r.paciente}",
-                                    style = MaterialTheme.typography.titleMedium,
+                                    r.hora,
+                                    style = MaterialTheme.typography.titleLarge,
                                     fontWeight = FontWeight.SemiBold
                                 )
-                                Spacer(Modifier.height(2.dp))
-                                Text(
-                                    " · ${r.servicio}",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                Column(
+                                    Modifier
+                                        .weight(0.55f)
+                                        .padding(end = 8.dp, start = 20.dp)
+                                ) {
+                                    Text(
+                                        "  ${r.paciente}",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                    Spacer(Modifier.height(2.dp))
+                                    Text(
+                                        " · ${r.servicio}",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                AssistChip(
+                                    onClick = {},
+                                    label = { Text(r.estado.name) }
                                 )
                             }
-                            AssistChip(
-                                onClick = {},
-                                label = { Text(r.estado.name) }
-                            )
-                        }
 
-                        Spacer(Modifier.height(6.dp))
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = 10.dp, start = 16.dp, end = 16.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            OutlinedButton(
-                                onClick = { mostrarDialogDetalle = true },
-                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
-                                modifier = Modifier.widthIn(min = 120.dp),
-                                shape = RoundedCornerShape(8.dp)
-                            ) { Text("Detalle", maxLines = 1, softWrap = false) }
+                            Spacer(Modifier.height(6.dp))
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = 10.dp, start = 16.dp, end = 16.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                OutlinedButton(
+                                    onClick = { mostrarDialogDetalle = true },
+                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                                    modifier = Modifier.widthIn(min = 120.dp),
+                                    shape = RoundedCornerShape(8.dp)
+                                ) { Text("Detalle", maxLines = 1, softWrap = false) }
 
-                            OutlinedButton(
-                                onClick = { /* abrir registrar para ESTA reserva */ mostrarDialogRegistrar = true },
-                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
-                                shape = RoundedCornerShape(8.dp),
-                                modifier = Modifier.widthIn(min = 120.dp)
-                            ) { Text("Registrar atención", maxLines = 1, softWrap = false) }
+                                OutlinedButton(
+                                    onClick = { mostrarDialogRegistrar = true /* aquí puedes pasar r.id */ },
+                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                                    shape = RoundedCornerShape(8.dp),
+                                    modifier = Modifier.widthIn(min = 120.dp)
+                                ) { Text("Registrar atención", maxLines = 1, softWrap = false) }
+                            }
                         }
                     }
                 }
+
             }
+
         }
     }
 

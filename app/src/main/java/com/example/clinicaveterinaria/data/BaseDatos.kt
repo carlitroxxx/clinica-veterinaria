@@ -458,6 +458,53 @@ class BaseDatos(context: Context) :
         return out
     }
 
+    data class ReservaDbPro(
+        val id: Long,
+        val clienteRut: String,
+        val fecha: String,
+        val hora: String,
+        val servicio: String,
+        val estado: String
+    )
+
+    // Reservas de un profesional en una fecha (YYYY-MM-DD)
+    fun getReservasDeProfesionalEn(profRut: String, fecha: String): List<ReservaDbPro> {
+        val out = mutableListOf<ReservaDbPro>()
+        readableDatabase.rawQuery(
+            """
+        SELECT id_reserva, cliente_rut, fecha, hora, servicio, estado
+        FROM reserva
+        WHERE profesional_rut = ? AND fecha = ?
+        ORDER BY hora ASC
+        """.trimIndent(),
+            arrayOf(profRut, fecha)
+        ).use { c ->
+            while (c.moveToNext()) {
+                out.add(
+                    ReservaDbPro(
+                        id = c.getLong(0),
+                        clienteRut = c.getString(1),
+                        fecha = c.getString(2),
+                        hora = c.getString(3),
+                        servicio = c.getString(4),
+                        estado = c.getString(5)
+                    )
+                )
+            }
+        }
+        return out
+    }
+
+    // Para mostrar el nombre del paciente/cliente
+    fun getClienteNombrePorRut(rut: String): Pair<String, String>? {
+        readableDatabase.rawQuery(
+            "SELECT nombres, apellidos FROM cliente WHERE rut = ? LIMIT 1",
+            arrayOf(rut)
+        ).use { c ->
+            return if (c.moveToFirst()) c.getString(0) to c.getString(1) else null
+        }
+    }
+
 
 
 }
