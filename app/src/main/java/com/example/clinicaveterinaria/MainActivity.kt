@@ -256,29 +256,63 @@ class MainActivity : ComponentActivity() {
                             arguments = listOf(navArgument("rut") { type = NavType.StringType })
                         ) { backStackEntry ->
                             val rut = backStackEntry.arguments?.getString("rut") ?: ""
-                            val p = remember { ClienteMockData.buscarPorRut(rut) }
-                            if (p != null) {
-                                val nombre = "${p.nombres} ${p.apellidos}"
-                                val especialidad = p.especialidad
-                                val bio = ClienteMockData.bioDe(p)
-                                val fotoRes = ClienteMockData.fotoDe(p)
-                                val servicios = ClienteMockData.serviciosDe(p)
 
-                                PerfilProfesionalClienteScreen(
+                            // 1) Traemos el profesional desde la BD
+                            val profesional = remember(rut) { Repository.obtenerProfesional(rut) }
+
+                            // 2) Derivados para la UI
+                            val nombre = profesional?.let { "${it.nombres} ${it.apellidos}" } ?: "Profesional"
+                            val especialidad = profesional?.especialidad ?: "Especialidad"
+                            val generoNormalizado = profesional?.genero?.trim()?.lowercase() ?: ""
+                            // Usa drawables que EXISTAN; si no tienes perfildoctor(a), deja logo
+                            val fotoRes = when (generoNormalizado) {
+                                "f", "femenino" -> R.drawable.perfildoctora1
+                                "m", "masculino" -> R.drawable.perfildoctor1
+                                else -> R.drawable.logo
+                            }
+
+                            // 3) (Opcional) Servicios del profesional: si no tienes tabla/relación, muestra un set básico
+                            val servicios = remember(profesional?.especialidad) {
+                                buildList {
+                                    // si quieres algo más real, reemplaza por Repository.obtenerServiciosDelProfesional(rut)
+                                    add("Consulta ${profesional?.especialidad ?: "General"}")
+                                    add("Control / Evaluación")
+                                }
+                            }
+
+                            // 4) Render de la pantalla
+                            if (profesional != null) {
+                                // Tu versión de la pantalla cliente
+                                com.example.clinicaveterinaria.ui.cliente.PerfilProfesionalScreen(
                                     nombre = nombre,
                                     especialidad = especialidad,
-                                    bio = bio,
+                                    bio = "",                          // si ya no usas bio, deja vacío
                                     servicios = servicios,
                                     fotoResId = fotoRes,
                                     onAgendarClick = {
-                                        navController.navigate("clienteAgendar/${p.rut}")
+                                        val rutSeg = android.net.Uri.encode(rut)
+                                        navController.navigate("clienteAgendar/$rutSeg")
                                     },
                                     onBackClick = { navController.popBackStack() }
                                 )
                             } else {
-                                Text("Profesional no encontrado", color = Color.Red)
+                                // Fallback simple si el rut no existe
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(16.dp),
+                                    verticalArrangement = Arrangement.Center,
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text("Profesional no encontrado", color = MaterialTheme.colorScheme.error)
+                                    Spacer(Modifier.height(12.dp))
+                                    OutlinedButton(onClick = { navController.popBackStack() }) {
+                                        Text("Volver")
+                                    }
+                                }
                             }
                         }
+
 
                         // Agendar (mínimo funcional; guarda en BD)
                         composable(
