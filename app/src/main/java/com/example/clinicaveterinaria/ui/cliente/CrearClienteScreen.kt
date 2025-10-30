@@ -4,11 +4,13 @@ import android.annotation.SuppressLint
 import android.util.Patterns
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
@@ -135,6 +137,7 @@ fun CrearClienteScreen(
                     label = { Text("Email") },
                     singleLine = true,
                     isError = email.isNotEmpty() && !emailOk,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                     supportingText = {
                         if (email.isNotEmpty() && !emailOk) Text("Email no válido")
                     },
@@ -147,6 +150,7 @@ fun CrearClienteScreen(
                     value = telefono,
                     onValueChange = { telefono = it.filter(Char::isDigit) },
                     label = { Text("Teléfono") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                     singleLine = true,
                     isError = telefono.isNotEmpty() && !telefonoOk,
                     supportingText = {
@@ -162,6 +166,7 @@ fun CrearClienteScreen(
                     onValueChange = { password = it },
                     label = { Text("Contraseña") },
                     singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                     visualTransformation = PasswordVisualTransformation(),
                     isError = password.isNotEmpty() && !passwordOk,
                     supportingText = {
@@ -177,6 +182,7 @@ fun CrearClienteScreen(
                     onValueChange = { password2 = it },
                     label = { Text("Confirmar contraseña") },
                     singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                     visualTransformation = PasswordVisualTransformation(),
                     isError = password2.isNotEmpty() && !passCoincide,
                     supportingText = {

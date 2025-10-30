@@ -92,6 +92,9 @@ fun CrearProfesionalScreen(
                     value = rut, onValueChange = { rut = it },
                     label = { Text("RUT") }, singleLine = true,
                     isError = !rutOk && rut.isNotEmpty(),
+                    supportingText = {
+                        if (rut.isNotEmpty() && !rutOk) Text("RUT no válido")
+                    },
                     modifier = Modifier.fillMaxWidth()
                 )
             }
@@ -100,6 +103,9 @@ fun CrearProfesionalScreen(
                     value = nombres, onValueChange = { nombres = it },
                     label = { Text("Nombres") }, singleLine = true,
                     isError = !nombresOk && nombres.isNotEmpty(),
+                    supportingText = {
+                        if (nombres.isNotEmpty() && !nombresOk) Text("Ingresa tus nombres")
+                    },
                     modifier = Modifier.fillMaxWidth()
                 )
             }
@@ -108,6 +114,9 @@ fun CrearProfesionalScreen(
                     value = apellidos, onValueChange = { apellidos = it },
                     label = { Text("Apellidos") }, singleLine = true,
                     isError = !apellidosOk && apellidos.isNotEmpty(),
+                    supportingText = {
+                        if (apellidos.isNotEmpty() && !apellidosOk) Text("Ingresa tus apellidos")
+                    },
                     modifier = Modifier.fillMaxWidth()
                 )
             }
@@ -195,6 +204,9 @@ fun CrearProfesionalScreen(
                     label = { Text("Email") }, singleLine = true,
                     isError = !emailOk && email.isNotEmpty(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                    supportingText = {
+                        if (email.isNotEmpty() && !emailOk) Text("Email no válido")
+                    },
                     modifier = Modifier.fillMaxWidth()
                 )
             }
@@ -204,6 +216,9 @@ fun CrearProfesionalScreen(
                     label = { Text("Teléfono") }, singleLine = true,
                     isError = !telefonoOk && telefono.isNotEmpty(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                    supportingText = {
+                        if (telefono.isNotEmpty() && !telefonoOk) Text("Usa de 8 a 12 dígitos")
+                    },
                     modifier = Modifier.fillMaxWidth()
                 )
             }
@@ -217,6 +232,9 @@ fun CrearProfesionalScreen(
                     visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                     isError = !passwordOk && password.isNotEmpty(),
+                    supportingText = {
+                        if (password.isNotEmpty() && !passwordOk) Text("4 a 20 caracteres")
+                    },
                     modifier = Modifier.fillMaxWidth()
                 )
             }
