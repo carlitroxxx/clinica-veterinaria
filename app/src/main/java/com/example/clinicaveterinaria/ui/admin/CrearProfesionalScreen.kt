@@ -1,11 +1,13 @@
 package com.example.clinicaveterinaria.ui.admin
 
 import android.util.Patterns
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material3.*
 import androidx.compose.material3.rememberDatePickerState
@@ -17,10 +19,14 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import com.example.clinicaveterinaria.R
 import com.example.clinicaveterinaria.data.Repository
 import com.example.clinicaveterinaria.model.Profesional
 import com.example.clinicaveterinaria.util.RutUtils
@@ -71,21 +77,59 @@ fun CrearProfesionalScreen(
     val formOk = rutOk && nombresOk && apellidosOk && generoOk && fechaOk &&
             especialidadOk && emailOk && telefonoOk && passwordOk
 
-    Scaffold { inner ->
+    val colorPrincipal = Color(0xFF00AAB0)
+    val colorFondoCampo = Color(0xFFF7FCFC)
+    val fieldColors = OutlinedTextFieldDefaults.colors(
+        unfocusedContainerColor = colorFondoCampo,
+        unfocusedBorderColor = colorPrincipal,
+        focusedBorderColor = colorPrincipal,
+        focusedLabelColor = colorPrincipal
+    )
+
+    val datePickerColors = DatePickerDefaults.colors(
+        containerColor = colorFondoCampo,
+        selectedDayContainerColor = colorPrincipal,
+        todayDateBorderColor = colorPrincipal,
+        todayContentColor = colorPrincipal
+    )
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Nuevo Profesional") },
+                navigationIcon = {
+                    IconButton(onClick = onCancelar) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Cancelar"
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = colorPrincipal, // <-- Color principal
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
+                )
+            )
+        }
+    ) { inner ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(inner)
-                .padding(8.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(bottom = 0.dp)
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            contentPadding = PaddingValues(bottom = 16.dp, top = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             item {
-                Column(Modifier.fillMaxWidth().padding(horizontal = 4.dp)) {
-                    Text("Nuevo profesional", style = MaterialTheme.typography.titleLarge)
-                    Spacer(Modifier.height(4.dp))
-                    HorizontalDivider(Modifier.padding(top = 8.dp))
-                }
+                Image(
+                    painter = painterResource(id = R.drawable.logo),
+                    contentDescription = "Logo Clínica",
+                    modifier = Modifier
+                        .height(80.dp)
+                        .fillMaxWidth(0.6f)
+                )
             }
             item {
                 OutlinedTextField(
@@ -95,7 +139,8 @@ fun CrearProfesionalScreen(
                     supportingText = {
                         if (rut.isNotEmpty() && !rutOk) Text("RUT no válido")
                     },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = fieldColors
                 )
             }
             item {
@@ -106,7 +151,8 @@ fun CrearProfesionalScreen(
                     supportingText = {
                         if (nombres.isNotEmpty() && !nombresOk) Text("Ingresa tus nombres")
                     },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = fieldColors
                 )
             }
             item {
@@ -117,7 +163,8 @@ fun CrearProfesionalScreen(
                     supportingText = {
                         if (apellidos.isNotEmpty() && !apellidosOk) Text("Ingresa tus apellidos")
                     },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = fieldColors
                 )
             }
             item {
@@ -132,7 +179,8 @@ fun CrearProfesionalScreen(
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = openGenero) },
                         modifier = Modifier
                             .menuAnchor()
-                            .fillMaxWidth()
+                            .fillMaxWidth(),
+                        colors = fieldColors
                     )
                     ExposedDropdownMenu(expanded = openGenero, onDismissRequest = { openGenero = false }) {
                         listOf("Masculino", "Femenino", "Otro").forEach {
@@ -157,7 +205,8 @@ fun CrearProfesionalScreen(
                                 Icon(Icons.Outlined.DateRange, contentDescription = "Elegir fecha")
                             }
                         },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = fieldColors
                     )
 
                     Box(
@@ -176,16 +225,21 @@ fun CrearProfesionalScreen(
                                 onClick = {
                                     fechaNac = formatDateMillis(datePickerState.selectedDateMillis)
                                     showDatePicker = false
-                                }
+                                },
+                                colors = ButtonDefaults.textButtonColors(contentColor = colorPrincipal)
                             ) { Text("Aceptar") }
                         },
                         dismissButton = {
-                            TextButton(onClick = { showDatePicker = false }) { Text("Cancelar") }
+                            TextButton(
+                                onClick = { showDatePicker = false },
+                                colors = ButtonDefaults.textButtonColors(contentColor = colorPrincipal)
+                            ) { Text("Cancelar") }
                         }
                     ) {
                         DatePicker(
                             state = datePickerState,
-                            showModeToggle = true
+                            showModeToggle = true,
+                            colors = datePickerColors
                         )
                     }
                 }
@@ -195,7 +249,8 @@ fun CrearProfesionalScreen(
                     value = especialidad, onValueChange = { especialidad = it },
                     label = { Text("Especialidad") }, singleLine = true,
                     isError = !especialidadOk && especialidad.isNotEmpty(),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = fieldColors
                 )
             }
             item {
@@ -207,7 +262,8 @@ fun CrearProfesionalScreen(
                     supportingText = {
                         if (email.isNotEmpty() && !emailOk) Text("Email no válido")
                     },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = fieldColors
                 )
             }
             item {
@@ -219,10 +275,10 @@ fun CrearProfesionalScreen(
                     supportingText = {
                         if (telefono.isNotEmpty() && !telefonoOk) Text("Usa de 8 a 12 dígitos")
                     },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = fieldColors
                 )
             }
-            //Contraseña inicial
             item {
                 OutlinedTextField(
                     value = password,
@@ -235,17 +291,28 @@ fun CrearProfesionalScreen(
                     supportingText = {
                         if (password.isNotEmpty() && !passwordOk) Text("4 a 20 caracteres")
                     },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = fieldColors
                 )
             }
 
             item {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    OutlinedButton(onClick = onCancelar, modifier = Modifier.weight(1f)) { Text("Cancelar") }
+                    OutlinedButton(
+                        onClick = onCancelar,
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = colorPrincipal),
+                        border = ButtonDefaults.outlinedButtonBorder.copy(brush = SolidColor(
+                            colorPrincipal
+                        )
+                        )
+                    ) { Text("Cancelar") }
                     Button(
                         onClick = {
                             onGuardar(
@@ -263,7 +330,8 @@ fun CrearProfesionalScreen(
                             )
                         },
                         modifier = Modifier.weight(1f),
-                        enabled = formOk
+                        enabled = formOk,
+                        colors = ButtonDefaults.buttonColors(containerColor = colorPrincipal)
                     ) { Text("Guardar") }
                 }
             }
@@ -271,7 +339,6 @@ fun CrearProfesionalScreen(
     }
 }
 
-// Utilidad: formatear millis a "yyyy-MM-dd" sin desfase de zona
 private fun formatDateMillis(millis: Long?): String {
     if (millis == null) return ""
     val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())

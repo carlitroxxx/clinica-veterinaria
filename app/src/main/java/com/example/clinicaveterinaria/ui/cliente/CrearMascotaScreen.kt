@@ -1,19 +1,32 @@
 package com.example.clinicaveterinaria.ui.cliente
 
 import android.annotation.SuppressLint
+import android.util.Patterns
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import com.example.clinicaveterinaria.R
 import com.example.clinicaveterinaria.data.Repository
+import com.example.clinicaveterinaria.data.SesionManager
+import com.example.clinicaveterinaria.model.Cliente
+import com.example.clinicaveterinaria.util.RutUtils
 
-//Modelo de formulario
+
 data class MascotaForm(
     val clienteRut: String,
     val nombre: String,
@@ -50,7 +63,6 @@ fun CrearMascotaRoute(
 
 
 //Pantalla principal
-@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CrearMascotaScreen(
@@ -58,6 +70,7 @@ fun CrearMascotaScreen(
     onGuardar: (MascotaForm) -> Unit,
     onCancelar: () -> Unit
 ) {
+
     var rut by rememberSaveable { mutableStateOf(clienteRut) }
     var nombre by rememberSaveable { mutableStateOf("") }
     var especie by rememberSaveable { mutableStateOf("") }
@@ -68,33 +81,67 @@ fun CrearMascotaScreen(
     val especies = listOf("Perro", "Gato", "Ave", "Conejo", "Reptil", "Otro")
     val sexos = listOf("Macho", "Hembra", "Desconocido")
 
-    // Validaciones mínimas
     val nombreOk = nombre.trim().isNotEmpty()
     val especieOk = especie.trim().isNotEmpty()
     val fechaOk = fechaNac.isBlank() || Regex("""^\d{4}-\d{2}-\d{2}$""").matches(fechaNac)
     val formOk = nombreOk && especieOk && fechaOk
 
-    // Para dropdowns
     var expEspecie by rememberSaveable { mutableStateOf(false) }
     var expSexo by rememberSaveable { mutableStateOf(false) }
 
+    val colorPrincipal = Color(0xFF00AAB0)
+    val colorFondoCampo = Color(0xFFF7FCFC)
+    val fieldColors = OutlinedTextFieldDefaults.colors(
+        unfocusedContainerColor = colorFondoCampo,
+        unfocusedBorderColor = colorPrincipal,
+        focusedBorderColor = colorPrincipal,
+        focusedLabelColor = colorPrincipal,
+        // Colores para el campo deshabilitado (RUT Cliente)
+        disabledContainerColor = Color(0xFFEEEEEE),
+        disabledBorderColor = Color.Gray,
+        disabledLabelColor = Color.Gray
+    )
+
     Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Registrar Mascota") },
+                navigationIcon = {
+                    IconButton(onClick = onCancelar) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Cancelar"
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = colorPrincipal,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
+                )
+            )
+        },
         contentWindowInsets = WindowInsets(0)
-    ) {
+    ) { innerPadding ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(12.dp)
+                .padding(innerPadding)
+                .padding(horizontal = 16.dp)
                 .imePadding(),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(bottom = 8.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            contentPadding = PaddingValues(bottom = 16.dp, top = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
+
             item {
-                Column(Modifier.fillMaxWidth()) {
-                    Text("Registrar Mascota", style = MaterialTheme.typography.titleLarge)
-                    Spacer(Modifier.height(6.dp))
-                    HorizontalDivider()
-                }
+                Image(
+                    painter = painterResource(id = R.drawable.logo),
+                    contentDescription = "Logo Clínica",
+                    modifier = Modifier
+                        .height(80.dp)
+                        .fillMaxWidth(0.6f)
+                )
             }
 
             // RUT del cliente (solo lectura)
@@ -104,8 +151,9 @@ fun CrearMascotaScreen(
                     onValueChange = { /* readOnly visual */ },
                     label = { Text("RUT Cliente") },
                     singleLine = true,
-                    readOnly = true,
-                    modifier = Modifier.fillMaxWidth()
+                    enabled = false,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = fieldColors
                 )
             }
 
@@ -120,7 +168,8 @@ fun CrearMascotaScreen(
                     supportingText = {
                         if (nombre.isNotEmpty() && !nombreOk) Text("Ingresa el nombre")
                     },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = fieldColors
                 )
             }
 
@@ -143,7 +192,8 @@ fun CrearMascotaScreen(
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expEspecie) },
                         modifier = Modifier
                             .menuAnchor()
-                            .fillMaxWidth()
+                            .fillMaxWidth(),
+                        colors = fieldColors
                     )
                     ExposedDropdownMenu(
                         expanded = expEspecie,
@@ -169,7 +219,8 @@ fun CrearMascotaScreen(
                     onValueChange = { raza = it },
                     label = { Text("Raza (opcional)") },
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = fieldColors
                 )
             }
 
@@ -188,7 +239,8 @@ fun CrearMascotaScreen(
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expSexo) },
                         modifier = Modifier
                             .menuAnchor()
-                            .fillMaxWidth()
+                            .fillMaxWidth(),
+                        colors = fieldColors
                     )
                     ExposedDropdownMenu(
                         expanded = expSexo,
@@ -219,20 +271,25 @@ fun CrearMascotaScreen(
                     supportingText = {
                         if (fechaNac.isNotEmpty() && !fechaOk) Text("Usa el formato AAAA-MM-DD")
                     },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = fieldColors
                 )
             }
 
             // Botones
             item {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     OutlinedButton(
                         onClick = onCancelar,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = colorPrincipal),
+                        border = ButtonDefaults.outlinedButtonBorder.copy(brush = SolidColor(colorPrincipal))
                     ) { Text("Cancelar") }
 
                     Button(
@@ -249,7 +306,8 @@ fun CrearMascotaScreen(
                             )
                         },
                         enabled = formOk,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(containerColor = colorPrincipal)
                     ) { Text("Guardar") }
                 }
             }

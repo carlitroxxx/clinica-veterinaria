@@ -21,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -38,7 +39,6 @@ data class DiaCalendario(
     val numeroDia: String        // "1", "2", ...
 )
 
-/** Genera los próximos 7 días sin usar java.time */
 private fun generarProximos7Dias(): List<DiaCalendario> {
     val locale = Locale("es", "ES")
     val cal = Calendar.getInstance() // hoy
@@ -59,7 +59,6 @@ private fun generarProximos7Dias(): List<DiaCalendario> {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AgendarScreen(
-    // datos que ya usabas
     fecha: String,
     onFechaChange: (String) -> Unit,
     hora: String,
@@ -70,7 +69,6 @@ fun AgendarScreen(
     mensajeExito: String?,
     onConfirmarClick: () -> Unit,
     onBackClick: () -> Unit,
-    // NUEVO: para mostrar ficha del profesional y los horarios libres
     profesionalNombre: String? = null,
     profesionalEspecialidad: String? = null,
     @DrawableRes profesionalFotoResId: Int? = null,
@@ -78,7 +76,6 @@ fun AgendarScreen(
 ) {
     val dias = remember { generarProximos7Dias() }
 
-    // Selección interna (se sincroniza con tus estados externos via callbacks)
     var diaSeleccionado by remember(fecha) {
         mutableStateOf(
             dias.find { it.fechaIso == fecha } ?: dias.first()
@@ -88,6 +85,15 @@ fun AgendarScreen(
 
     LaunchedEffect(diaSeleccionado.fechaIso) { onFechaChange(diaSeleccionado.fechaIso) }
     LaunchedEffect(horaSeleccionada) { onHoraChange(horaSeleccionada) }
+
+    val colorPrincipal = Color(0xFF00AAB0)
+    val colorFondoCampo = Color(0xFFF7FCFC)
+    val fieldColors = OutlinedTextFieldDefaults.colors(
+        unfocusedContainerColor = colorFondoCampo,
+        unfocusedBorderColor = colorPrincipal,
+        focusedBorderColor = colorPrincipal,
+        focusedLabelColor = colorPrincipal
+    )
 
     Scaffold(
         topBar = {
@@ -99,7 +105,7 @@ fun AgendarScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
+                    containerColor = colorPrincipal,
                     titleContentColor = MaterialTheme.colorScheme.onPrimary,
                     navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
                 )
@@ -115,12 +121,12 @@ fun AgendarScreen(
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
 
-            // ----------- Info profesional (opcional) -----------
+            //Info profesional
             if (!profesionalNombre.isNullOrBlank() || !profesionalEspecialidad.isNullOrBlank()) {
                 InfoProfesionalCard(
                     nombre = profesionalNombre ?: "Profesional",
                     especialidad = profesionalEspecialidad ?: "",
-                    fotoResId = profesionalFotoResId ?: R.drawable.logo // fallback simple
+                    fotoResId = profesionalFotoResId ?: R.drawable.logo
                 )
             }
 
@@ -134,7 +140,6 @@ fun AgendarScreen(
                 diaSeleccionado = diaSeleccionado,
                 onDiaClick = { nuevoDia ->
                     diaSeleccionado = nuevoDia
-                    // Al cambiar de día, limpiamos la hora si ya no pertenece a la lista
                     if (horaSeleccionada.isNotBlank() && horaSeleccionada !in horariosDisponibles) {
                         horaSeleccionada = ""
                     }
@@ -162,13 +167,15 @@ fun AgendarScreen(
                 onValueChange = onServicioChange,
                 label = { Text("Servicio o motivo de la consulta") },
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                colors = fieldColors // <-- Color aplicado
             )
 
             Button(
                 onClick = onConfirmarClick,
                 modifier = Modifier.fillMaxWidth(),
-                enabled = fecha.isNotBlank() && hora.isNotBlank() && servicio.isNotBlank()
+                enabled = fecha.isNotBlank() && hora.isNotBlank() && servicio.isNotBlank(),
+                colors = ButtonDefaults.buttonColors(containerColor = colorPrincipal) // <-- Color
             ) {
                 Text("Confirmar Reserva")
             }
@@ -190,6 +197,8 @@ private fun InfoProfesionalCard(
     especialidad: String,
     @DrawableRes fotoResId: Int
 ) {
+    val colorPrincipal = Color(0xFF00AAB0)
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
@@ -206,12 +215,16 @@ private fun InfoProfesionalCard(
                 modifier = Modifier
                     .size(60.dp)
                     .clip(CircleShape)
-                    .border(1.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                    .border(1.dp, colorPrincipal, CircleShape)
             )
             Column {
                 Text(text = nombre, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 if (especialidad.isNotBlank()) {
-                    Text(text = especialidad, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
+                    Text(
+                        text = especialidad,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = colorPrincipal
+                    )
                 }
             }
         }
@@ -224,6 +237,8 @@ private fun CalendarioHorizontal(
     diaSeleccionado: DiaCalendario,
     onDiaClick: (DiaCalendario) -> Unit
 ) {
+    val colorPrincipal = Color(0xFF00AAB0)
+
     LazyRow(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -231,7 +246,7 @@ private fun CalendarioHorizontal(
         items(dias.size) { index ->
             val dia = dias[index]
             val isSelected = dia == diaSeleccionado
-            val backgroundColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
+            val backgroundColor = if (isSelected) colorPrincipal else MaterialTheme.colorScheme.surfaceVariant
             val contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
 
             Card(
@@ -260,6 +275,8 @@ private fun GrillaDeHoras(
     horaSeleccionada: String,
     onHoraClick: (String) -> Unit
 ) {
+    val colorPrincipal = Color(0xFF00AAB0)
+
     LazyVerticalGrid(
         columns = GridCells.Adaptive(minSize = 90.dp),
         modifier = Modifier.height(200.dp),
@@ -269,14 +286,14 @@ private fun GrillaDeHoras(
         items(horarios) { hora ->
             val isSelected = hora == horaSeleccionada
             val colors = if (isSelected) {
-                ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary)
+                ButtonDefaults.buttonColors(containerColor = colorPrincipal, contentColor = MaterialTheme.colorScheme.onPrimary)
             } else {
-                ButtonDefaults.outlinedButtonColors()
+                ButtonDefaults.outlinedButtonColors(contentColor = colorPrincipal)
             }
             Button(
                 onClick = { onHoraClick(hora) },
                 colors = colors,
-                border = if (!isSelected) ButtonDefaults.outlinedButtonBorder else null,
+                border = if (!isSelected) ButtonDefaults.outlinedButtonBorder.copy(brush = SolidColor(colorPrincipal)) else null,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(text = hora, textAlign = TextAlign.Center)

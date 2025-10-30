@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -29,19 +30,22 @@ data class Profesional (
     val email: String,
     val telefono: String
 )
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfesionalesScreen(
     profesionales: List<Profesional>,
     onProfesionalClick: (profesionalRut: String) -> Unit
 ) {
+    val colorPrincipal = Color(0xFF00AAB0)
+
     Scaffold(
         topBar = {
             //Barra de título
             TopAppBar(
                 title = { Text("Nuestros Profesionales") },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
+                    containerColor = colorPrincipal, // <-- Color aplicado
                     titleContentColor = MaterialTheme.colorScheme.onPrimary
                 )
             )
@@ -95,6 +99,8 @@ fun ProfesionalCard(
     @androidx.annotation.DrawableRes fotoResId: Int,
     onClick: () -> Unit
 ) {
+    val colorPrincipal = Color(0xFF00AAB0)
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -116,7 +122,7 @@ fun ProfesionalCard(
                 modifier = Modifier
                     .size(60.dp)
                     .clip(CircleShape)
-                    .border(1.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                    .border(1.dp, colorPrincipal, CircleShape)
             )
             Column {
                 Text(
@@ -127,7 +133,7 @@ fun ProfesionalCard(
                 Text(
                     text = profesional.especialidad,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.primary // Color del tema
+                    color = colorPrincipal
                 )
             }
         }

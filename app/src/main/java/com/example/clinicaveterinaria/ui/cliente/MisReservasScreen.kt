@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
@@ -32,6 +33,8 @@ fun MisReservasScreen(
     onCancelarClick: (reservaId: String) -> Unit,
     onBackClick: () -> Unit
 ) {
+    val colorPrincipal = Color(0xFF00AAB0)
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -45,7 +48,7 @@ fun MisReservasScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
+                    containerColor = colorPrincipal,
                     titleContentColor = MaterialTheme.colorScheme.onPrimary,
                     navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
                 )
@@ -78,7 +81,8 @@ fun MisReservasScreen(
                 items(reservas, key = { it.id }) { reserva ->
                     ReservaCard(
                         reserva = reserva,
-                        onCancelarClick = { onCancelarClick(reserva.id) }
+                        onCancelarClick = { onCancelarClick(reserva.id) },
+                        colorPrincipal = colorPrincipal
                     )
                 }
             }
@@ -88,13 +92,15 @@ fun MisReservasScreen(
 @Composable
 fun ReservaCard(
     reserva: ReservaMock,
-    onCancelarClick: () -> Unit
+    onCancelarClick: () -> Unit,
+    colorPrincipal: Color
 ) {
     val (statusColor, statusDecoration) = when (reserva.estado) {
-        "Realizada" -> MaterialTheme.colorScheme.primary to TextDecoration.None
+        "Realizada" -> colorPrincipal to TextDecoration.None
         "Cancelada" -> Color.Gray to TextDecoration.LineThrough
-        else -> MaterialTheme.colorScheme.secondary to TextDecoration.None
+        else -> colorPrincipal.copy(alpha = 0.7f) to TextDecoration.None
     }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(4.dp),
@@ -115,7 +121,7 @@ fun ReservaCard(
                     text = "${reserva.fecha} - ${reserva.hora}",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    textDecoration = statusDecoration // Tacha si está cancelada
+                    textDecoration = statusDecoration
                 )
                 Text(
                     text = reserva.estado,
@@ -146,7 +152,9 @@ fun ReservaCard(
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedButton(
                     onClick = onCancelarClick,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = colorPrincipal),
+                    border = ButtonDefaults.outlinedButtonBorder.copy(brush = SolidColor(colorPrincipal))
                 ) {
                     Text("Cancelar Reserva")
                 }

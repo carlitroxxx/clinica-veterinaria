@@ -1,5 +1,4 @@
-package com.example.clinicaveterinaria.ui.cliente
-
+package com.example.clinicaveterinaria.ui.screens.paciente
 
 import android.os.Build
 import androidx.annotation.RequiresApi
@@ -15,6 +14,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.example.clinicaveterinaria.R
@@ -37,6 +37,31 @@ fun AgregarMascotaScreen(
     onGuardarClick: () -> Unit,
     onBackClick: () -> Unit
 ) {
+    val colorPrincipal = Color(0xFF00AAB0)
+    val colorFondoCampo = Color(0xFFF7FCFC)
+
+    val fieldColors = OutlinedTextFieldDefaults.colors(
+        unfocusedContainerColor = colorFondoCampo,
+        unfocusedBorderColor = colorPrincipal,
+        focusedBorderColor = colorPrincipal,
+        focusedLabelColor = colorPrincipal
+    )
+
+    val dateFieldColors = OutlinedTextFieldDefaults.colors(
+        disabledContainerColor = colorFondoCampo,
+        disabledBorderColor = colorPrincipal.copy(alpha = 0.75f),
+        disabledLabelColor = colorPrincipal.copy(alpha = 0.75f),
+        disabledPlaceholderColor = colorPrincipal.copy(alpha = 0.5f),
+        disabledTrailingIconColor = colorPrincipal.copy(alpha = 0.75f)
+    )
+
+    val datePickerColors = DatePickerDefaults.colors(
+        containerColor = colorFondoCampo,
+        selectedDayContainerColor = colorPrincipal,
+        todayDateBorderColor = colorPrincipal,
+        todayContentColor = colorPrincipal
+    )
+
     var showDatePicker by remember { mutableStateOf(false) }
     val datePickerState = rememberDatePickerState(
         initialSelectedDateMillis = Instant.now().toEpochMilli()
@@ -54,15 +79,20 @@ fun AgregarMascotaScreen(
                                 .atZone(ZoneId.systemDefault()).toLocalDate()
                             onFechaNacimientoChange(selectedDate.format(DateTimeFormatter.ISO_LOCAL_DATE))
                         }
-                    }
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = colorPrincipal) // <-- Color
                 ) { Text("OK") }
             },
             dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) { Text("Cancelar") }
+                TextButton(
+                    onClick = { showDatePicker = false },
+                    colors = ButtonDefaults.textButtonColors(contentColor = colorPrincipal) // <-- Color
+                ) { Text("Cancelar") }
             }
         ) {
             DatePicker(
-                state = datePickerState
+                state = datePickerState,
+                colors = datePickerColors
             )
         }
     }
@@ -80,7 +110,7 @@ fun AgregarMascotaScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
+                    containerColor = colorPrincipal, // <-- Color
                     titleContentColor = MaterialTheme.colorScheme.onPrimary,
                     navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
                 )
@@ -114,21 +144,24 @@ fun AgregarMascotaScreen(
                 value = nombre,
                 onValueChange = onNombreChange,
                 label = { Text("Nombre de la mascota") },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                colors = fieldColors
             )
 
             OutlinedTextField(
                 value = especie,
                 onValueChange = onEspecieChange,
                 label = { Text("Especie (ej. Canino, Felino)") },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                colors = fieldColors
             )
 
             OutlinedTextField(
                 value = raza,
                 onValueChange = onRazaChange,
                 label = { Text("Raza (ej. Labrador, Siamés)") },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                colors = fieldColors
             )
 
             Box(
@@ -150,6 +183,7 @@ fun AgregarMascotaScreen(
                     },
                     modifier = Modifier.fillMaxWidth(),
                     enabled = false,
+                    colors = dateFieldColors
                 )
             }
 
@@ -157,7 +191,8 @@ fun AgregarMascotaScreen(
 
             Button(
                 onClick = onGuardarClick,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = colorPrincipal)
             ) {
                 Text("Guardar Mascota")
             }

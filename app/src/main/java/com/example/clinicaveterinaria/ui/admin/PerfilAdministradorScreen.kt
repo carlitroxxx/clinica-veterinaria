@@ -3,10 +3,13 @@ package com.example.clinicaveterinaria.ui.admin
 import android.text.format.DateFormat
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -33,86 +36,111 @@ fun PerfilAdministradorScreen(nav: NavHostController) {
 
     val totalProfesionales = Repository.profesionales.size
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White)
-            .padding(horizontal = 24.dp, vertical = 24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(18.dp)
-    ) {
-        //Avatar + título
-        Image(
-            painter = painterResource(id = R.drawable.logo),
-            contentDescription = "Logo empresa",
+    val colorPrincipal = Color(0xFF00AAB0)
+    val colorFondoClaro = Color(0xFFF7FCFC)
+    val colorAvatarBg = Color(0xFFE0F7F7)
+    val colorTextoCard = Color(0xFF007D82)
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Perfil Administrador") },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = colorPrincipal,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary
+                ),
+                actions = {
+                    // Botón de logout en la TopAppBar
+                    IconButton(onClick = {
+                        SesionManager.cerrarSesion(context)
+                        nav.navigate("login") {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.ExitToApp,
+                            contentDescription = "Cerrar sesión",
+                            tint = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
+                }
+            )
+        }
+    ) { innerPadding ->
+        Column(
             modifier = Modifier
-                .size(120.dp)
-                .clip(CircleShape)
-                .background(Color(0xFFE0F7F7))
-                .padding(16.dp)
-        )
-        Text("Administrador", fontSize = 22.sp, color = Color(0xFF00AAB0), fontWeight = FontWeight.SemiBold)
-
-        //Chip de rol
-        AssistChip(
-            onClick = { },
-            label = { Text("Rol: Admin") },
-            enabled = false
-        )
-
-        //Email
-        OutlinedTextField(
-            value = email,
-            onValueChange = {},
-            label = { Text("Correo") },
-            enabled = false,
-            singleLine = true,
-            colors = OutlinedTextFieldDefaults.colors(
-                disabledBorderColor = Color(0xFF00AAB0),
-                disabledLabelColor = Color(0xFF00AAB0),
-                disabledTextColor = Color.Black
-            ),
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                .fillMaxSize()
+                .padding(innerPadding)
+                .background(Color.White)
+                .padding(horizontal = 24.dp, vertical = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
-            Card(
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFF2FBFB)),
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.weight(1f)
+            //Avatar + título
+            Image(
+                painter = painterResource(id = R.drawable.logo),
+                contentDescription = "Logo empresa",
+                modifier = Modifier
+                    .size(120.dp)
+                    .clip(CircleShape)
+                    .background(colorAvatarBg)
+                    .padding(16.dp)
+            )
+            Text("Administrador", fontSize = 22.sp, color = colorPrincipal, fontWeight = FontWeight.SemiBold)
+
+            //Chip de rol
+            AssistChip(
+                onClick = { },
+                label = { Text("Rol: Admin") },
+                colors = AssistChipDefaults.assistChipColors(
+                    labelColor = colorPrincipal,
+                    containerColor = colorFondoClaro
+                ),
+                border = BorderStroke(1.dp, colorPrincipal)
+            )
+
+            //Email
+            OutlinedTextField(
+                value = email,
+                onValueChange = {},
+                label = { Text("Correo") },
+                enabled = false,
+                singleLine = true,
+                colors = OutlinedTextFieldDefaults.colors(
+                    disabledBorderColor = colorPrincipal,
+                    disabledLabelColor = colorPrincipal,
+                    disabledTextColor = Color.Black
+                ),
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Column(
-                    Modifier.padding(14.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = colorFondoClaro),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.weight(1f)
                 ) {
-                    Text("Cantidad de Profesionales", style = MaterialTheme.typography.labelMedium, color = Color(0xFF007D82))
-                    Text(totalProfesionales
-.toString(), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                    Column(
+                        Modifier.padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text(
+                            "Cantidad de Profesionales",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = colorTextoCard // <-- Color
+                        )
+                        Text(
+                            totalProfesionales.toString(),
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
+            Spacer(Modifier.height(18.dp))
         }
-        Spacer(Modifier.height(18.dp))
-
-        //Cerrar sesión
-        Button(
-            onClick = {
-                SesionManager.cerrarSesion(context)
-                nav.navigate("login") {
-                    popUpTo(0) { inclusive = true }
-                }
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(50.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF00AAB0),
-                contentColor = Color.White
-            ),
-            shape = MaterialTheme.shapes.medium
-        ) { Text("Cerrar sesión", fontSize = 18.sp) }
     }
 }
-

@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
@@ -32,6 +33,7 @@ fun PerfilClienteScreen(
     onChangePasswordClick: () -> Unit,
     onLogoutClick: () -> Unit
 ) {
+
     var isEditing by remember { mutableStateOf(false) }
 
     var nombre by remember { mutableStateOf(mockNombre) }
@@ -49,12 +51,27 @@ fun PerfilClienteScreen(
         isEditing = false
     }
 
+    val colorPrincipal = Color(0xFF00AAB0)
+    val colorFondoCampo = Color(0xFFF7FCFC)
+    val fieldColors = OutlinedTextFieldDefaults.colors(
+
+        unfocusedContainerColor = colorFondoCampo,
+        unfocusedBorderColor = colorPrincipal,
+        focusedBorderColor = colorPrincipal,
+        focusedLabelColor = colorPrincipal,
+
+        disabledContainerColor = colorFondoCampo,
+        disabledBorderColor = colorPrincipal.copy(alpha = 0.75f),
+        disabledLabelColor = colorPrincipal.copy(alpha = 0.75f),
+        disabledLeadingIconColor = colorPrincipal.copy(alpha = 0.75f)
+    )
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Mi Perfil") },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
+                    containerColor = colorPrincipal,
                     titleContentColor = MaterialTheme.colorScheme.onPrimary,
                     navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
                 ),
@@ -101,13 +118,13 @@ fun PerfilClienteScreen(
                 modifier = Modifier
                     .size(120.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primaryContainer),
+                    .background(colorFondoCampo),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.Person,
                     contentDescription = "Avatar de Perfil",
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = colorPrincipal,
                     modifier = Modifier.size(80.dp)
                 )
             }
@@ -128,9 +145,10 @@ fun PerfilClienteScreen(
                     value = nombre,
                     onValueChange = { nombre = it },
                     label = { Text("Nombre Completo") },
-                    readOnly = !isEditing, // Solo editable si isEditing = true
+                    readOnly = !isEditing,
                     leadingIcon = { Icon(Icons.Default.Person, "Nombre") },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = fieldColors
                 )
                 OutlinedTextField(
                     value = email,
@@ -138,7 +156,8 @@ fun PerfilClienteScreen(
                     label = { Text("Email") },
                     readOnly = !isEditing,
                     leadingIcon = { Icon(Icons.Default.Email, "Email") },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = fieldColors
                 )
                 OutlinedTextField(
                     value = telefono,
@@ -146,7 +165,8 @@ fun PerfilClienteScreen(
                     label = { Text("Teléfono") },
                     readOnly = !isEditing,
                     leadingIcon = { Icon(Icons.Default.Phone, "Teléfono") },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = fieldColors
                 )
             }
 
@@ -156,7 +176,9 @@ fun PerfilClienteScreen(
 
             OutlinedButton(
                 onClick = onChangePasswordClick,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = colorPrincipal),
+                border = ButtonDefaults.outlinedButtonBorder.copy(brush = SolidColor(colorPrincipal))
             ) {
                 Icon(Icons.Default.Lock, contentDescription = "Contraseña", modifier = Modifier.padding(end = 8.dp))
                 Text("Cambiar contraseña")
@@ -166,7 +188,7 @@ fun PerfilClienteScreen(
                 onClick = onLogoutClick,
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.error, // Botón rojo
+                    containerColor = MaterialTheme.colorScheme.error,
                     contentColor = MaterialTheme.colorScheme.onError
                 )
             ) {

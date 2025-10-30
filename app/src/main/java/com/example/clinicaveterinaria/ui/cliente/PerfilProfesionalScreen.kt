@@ -1,4 +1,4 @@
-package com.example.clinicaveterinaria.ui.cliente
+package com.example.clinicaveterinaria.ui.screens.paciente
 
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
@@ -20,6 +20,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -38,7 +39,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.clinicaveterinaria.R // <-- Importante para la foto
+import com.example.clinicaveterinaria.R
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -52,6 +53,7 @@ fun PerfilProfesionalScreen(
     onAgendarClick: () -> Unit,
     onBackClick: () -> Unit
 ) {
+    val colorPrincipal = Color(0xFF00AAB0)
 
     Scaffold(
         topBar = {
@@ -66,7 +68,7 @@ fun PerfilProfesionalScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
+                    containerColor = colorPrincipal,
                     titleContentColor = MaterialTheme.colorScheme.onPrimary,
                     navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
                 )
@@ -78,10 +80,9 @@ fun PerfilProfesionalScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .padding(16.dp)
-                // Hacemos que la columna tenga scroll por si el contenido es muy largo
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(20.dp) // Espacio entre secciones
+            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
 
             //Sección de Foto y Nombre
@@ -94,7 +95,7 @@ fun PerfilProfesionalScreen(
                     .clip(CircleShape)
                     .border(
                         2.dp,
-                        MaterialTheme.colorScheme.primary,
+                        colorPrincipal,
                         CircleShape
                     )
             )
@@ -108,7 +109,7 @@ fun PerfilProfesionalScreen(
             Text(
                 text = especialidad,
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.primary
+                color = colorPrincipal
             )
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
@@ -141,7 +142,7 @@ fun PerfilProfesionalScreen(
                     fontWeight = FontWeight.Bold
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                // Muestra la lista de servicios con un ícono
+
                 servicios.forEach { servicio ->
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -150,7 +151,7 @@ fun PerfilProfesionalScreen(
                         Icon(
                             imageVector = Icons.Filled.CheckCircle,
                             contentDescription = "Servicio",
-                            tint = MaterialTheme.colorScheme.primary,
+                            tint = colorPrincipal,
                             modifier = Modifier.size(20.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
@@ -164,10 +165,10 @@ fun PerfilProfesionalScreen(
 
             Spacer(modifier = Modifier.weight(1f))
 
-            //Botón "Agendar"
             Button(
                 onClick = onAgendarClick,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = colorPrincipal)
             ) {
                 Text("Agendar Cita")
             }
