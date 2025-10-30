@@ -93,6 +93,13 @@ fun LoginScreen(nav: NavHostController, context: android.content.Context) {
                 mensaje = null
 
                 when {
+                    emailTrim == "cliente@correo.cl" && passTrim == "1234" -> {
+                        SesionManager.iniciarSesion(context, emailTrim, "cliente")
+                        nav.navigate("clienteProfesionales") {
+                            popUpTo("login") { inclusive = true }
+                        }
+                    }
+
                     // ---- admin fijo ----
                     emailTrim == "admin@correo.cl" && passTrim == "1234" -> {
                         SesionManager.iniciarSesion(context, emailTrim, "admin")
