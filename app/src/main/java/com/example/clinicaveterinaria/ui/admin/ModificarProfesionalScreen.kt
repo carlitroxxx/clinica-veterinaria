@@ -1,0 +1,267 @@
+package com.example.clinicaveterinaria.ui.admin
+
+import android.util.Patterns
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.DateRange
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material3.*
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.unit.dp
+import com.example.clinicaveterinaria.model.Profesional
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
+
+private fun formatDateMillis(millis: Long?): String {
+    if (millis == null) return ""
+    val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+    sdf.timeZone = TimeZone.getTimeZone("UTC")
+    return sdf.format(Date(millis))
+}
+
+private fun parseDateToMillis(dateStr: String): Long? {
+    return try {
+        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        sdf.timeZone = TimeZone.getTimeZone("UTC")
+        sdf.parse(dateStr)?.time
+    } catch (_: Exception) { null }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ModificarProfesionalScreen(
+    profesional: Profesional,
+    onGuardar: (Profesional) -> Unit,
+    onCancelar: () -> Unit,
+    onEliminar: (Profesional) -> Unit
+) {
+    var rut by rememberSaveable { mutableStateOf(profesional.rut) }
+    var nombres by rememberSaveable { mutableStateOf(profesional.nombres) }
+    var apellidos by rememberSaveable { mutableStateOf(profesional.apellidos) }
+    var genero by rememberSaveable { mutableStateOf(profesional.genero) }
+    var fechaNac by rememberSaveable { mutableStateOf(profesional.fechaNacimiento) }
+    var especialidad by rememberSaveable { mutableStateOf(profesional.especialidad) }
+    var email by rememberSaveable { mutableStateOf(profesional.email) }
+    var telefono by rememberSaveable { mutableStateOf(profesional.telefono) }
+    var password by rememberSaveable { mutableStateOf(profesional.password) }
+    var showPass by rememberSaveable { mutableStateOf(false) }
+
+    val nombresOk = nombres.trim().isNotEmpty()
+    val apellidosOk = apellidos.trim().isNotEmpty()
+    val generoOk = genero.isNotEmpty()
+    val fechaOk = Regex("""\d{4}-\d{2}-\d{2}""").matches(fechaNac)
+    val especialidadOk = especialidad.trim().isNotEmpty()
+    val emailOk = Patterns.EMAIL_ADDRESS.matcher(email.trim()).matches()
+    val telefonoOk = telefono.trim().length in 8..12 && telefono.all { it.isDigit() }
+    val passwordOk = password.length in 4..20
+
+    val formOk = nombresOk && apellidosOk && generoOk && fechaOk &&
+            especialidadOk && emailOk && telefonoOk && passwordOk
+
+    Scaffold(topBar = { TopAppBar(title = { Text("Editar profesional") }) }) { inner ->
+        var openGenero by remember { mutableStateOf(false) }
+
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(inner) // ✅ evita que lo tape el TopBar
+                .padding(8.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(bottom = 0.dp)
+        ) {
+            item {
+                OutlinedTextField(
+                    value = rut,
+                    onValueChange = {},
+                    label = { Text("RUT (no editable)") },
+                    singleLine = true,
+                    enabled = false,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+            item {
+                OutlinedTextField(
+                    value = nombres, onValueChange = { nombres = it },
+                    label = { Text("Nombres") }, singleLine = true,
+                    isError = !nombresOk && nombres.isNotEmpty(),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+            item {
+                OutlinedTextField(
+                    value = apellidos, onValueChange = { apellidos = it },
+                    label = { Text("Apellidos") }, singleLine = true,
+                    isError = !apellidosOk && apellidos.isNotEmpty(),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
+            item {
+                ExposedDropdownMenuBox(expanded = openGenero, onExpandedChange = { openGenero = it }) {
+                    OutlinedTextField(
+                        value = genero,
+                        onValueChange = {},
+                        label = { Text("Género") },
+                        readOnly = true,
+                        isError = !generoOk && genero.isNotEmpty(),
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = openGenero) },
+                        modifier = Modifier.menuAnchor().fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(expanded = openGenero, onDismissRequest = { openGenero = false }) {
+                        listOf("Masculino", "Femenino", "Otro").forEach {
+                            DropdownMenuItem(text = { Text(it) }, onClick = { genero = it; openGenero = false })
+                        }
+                    }
+                }
+            }
+
+            item {
+                var showDatePicker by remember { mutableStateOf(false) }
+                val datePickerState = rememberDatePickerState(
+                    initialSelectedDateMillis = parseDateToMillis(fechaNac)
+                )
+
+                Box {
+                    OutlinedTextField(
+                        value = fechaNac,
+                        onValueChange = { /* no editable manual */ },
+                        label = { Text("Fecha de nacimiento") },
+                        singleLine = true,
+                        readOnly = true,
+                        isError = !fechaOk && fechaNac.isNotEmpty(),
+                        trailingIcon = {
+                            IconButton(onClick = { showDatePicker = true }) {
+                                Icon(Icons.Outlined.DateRange, contentDescription = "Elegir fecha")
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Box(
+                        Modifier
+                            .matchParentSize()
+                            .padding(top = 9.dp, end = 48.dp)
+                            .clickable { showDatePicker = true }
+                    )
+                }
+
+                if (showDatePicker) {
+                    DatePickerDialog(
+                        onDismissRequest = { showDatePicker = false },
+                        confirmButton = {
+                            TextButton(
+                                onClick = {
+                                    fechaNac = formatDateMillis(datePickerState.selectedDateMillis)
+                                    showDatePicker = false
+                                }
+                            ) { Text("Aceptar") }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showDatePicker = false }) { Text("Cancelar") }
+                        }
+                    ) {
+                        DatePicker(
+                            state = datePickerState,
+                            showModeToggle = true
+                        )
+                    }
+                }
+            }
+
+            item {
+                OutlinedTextField(
+                    value = especialidad, onValueChange = { especialidad = it },
+                    label = { Text("Especialidad") }, singleLine = true,
+                    isError = !especialidadOk && especialidad.isNotEmpty(),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+            item {
+                OutlinedTextField(
+                    value = email, onValueChange = { email = it },
+                    label = { Text("Email") }, singleLine = true,
+                    isError = !emailOk && email.isNotEmpty(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+            item {
+                OutlinedTextField(
+                    value = telefono, onValueChange = { telefono = it.filter(Char::isDigit) },
+                    label = { Text("Teléfono") }, singleLine = true,
+                    isError = !telefonoOk && telefono.isNotEmpty(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
+            // -------- Contraseña (editable) ----------
+            item {
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { password = it },
+                    label = { Text("Contraseña") },
+                    singleLine = true,
+                    visualTransformation = if (showPass) VisualTransformation.None else PasswordVisualTransformation(),
+                    trailingIcon = {
+                        IconButton(onClick = { showPass = !showPass }) {
+                            Icon(
+                                imageVector = if (showPass) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+                                contentDescription = if (showPass) "Ocultar" else "Mostrar"
+                            )
+                        }
+                    },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    isError = !passwordOk && password.isNotEmpty(),
+                    supportingText = {
+                        if (!passwordOk && password.isNotEmpty()) Text("Mínimo 4 caracteres")
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedButton(onClick = onCancelar, modifier = Modifier.weight(1f)) { Text("Cancelar") }
+                    OutlinedButton(onClick = { onEliminar(profesional) }, modifier = Modifier.weight(1f)) { Text("Eliminar") }
+                    Button(
+                        onClick = {
+                            onGuardar(
+                                Profesional(
+                                    rut = rut, // PK inmutable
+                                    nombres = nombres.trim(),
+                                    apellidos = apellidos.trim(),
+                                    genero = genero,
+                                    fechaNacimiento = fechaNac,
+                                    especialidad = especialidad.trim(),
+                                    email = email.trim(),
+                                    telefono = telefono.trim(),
+                                    password = password.trim() // 👈 actualiza contraseña
+                                )
+                            )
+                        },
+                        enabled = formOk,
+                        modifier = Modifier.weight(1f)
+                    ) { Text("Guardar cambios") }
+                }
+            }
+        }
+    }
+}
