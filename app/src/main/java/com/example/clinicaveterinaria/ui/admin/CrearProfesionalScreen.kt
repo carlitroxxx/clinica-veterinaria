@@ -240,8 +240,7 @@ fun CrearProfesionalScreen(
                                     especialidad = especialidad.trim(),
                                     email = email.trim(),
                                     telefono = telefono.trim(),
-                                    password = password.trim(),
-                                    bio = ""
+                                    password = password.trim()
                                 )
                             )
                         },

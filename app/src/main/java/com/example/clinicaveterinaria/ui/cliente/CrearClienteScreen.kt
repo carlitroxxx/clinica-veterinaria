@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.util.Patterns
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -14,33 +13,33 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.clinicaveterinaria.data.Repository
+import com.example.clinicaveterinaria.data.SesionManager
 import com.example.clinicaveterinaria.model.Cliente
 import com.example.clinicaveterinaria.util.RutUtils
 
 
 @Composable
-fun CrearClienteRoute(
-    nav: NavHostController,
-    onGuardarCliente: (Cliente) -> Unit = { }
-) {
+fun CrearClienteRoute(nav: NavHostController) {
     val ctx = androidx.compose.ui.platform.LocalContext.current
+    var error by remember { mutableStateOf<String?>(null) }
 
     CrearClienteScreen(
         onGuardar = { c ->
-            // Guardar en BD
             val res = Repository.agregarCliente(c)
             if (res.ok) {
-                com.example.clinicaveterinaria.data.SesionManager.iniciarSesion(ctx, c.email, "cliente")
+                SesionManager.iniciarSesion(ctx, c.email, "cliente")
                 nav.navigate("clienteAgregarMascota/${c.rut}") {
                     popUpTo("login") { inclusive = true }
                 }
             } else {
-                nav.currentBackStackEntry?.savedStateHandle?.set("crearClienteError", res.mensaje ?: "Error al guardar")
+                error = res.mensaje ?: "No se pudo guardar"
             }
         },
-        onCancelar = { nav.popBackStack() }
+        onCancelar = { nav.popBackStack() },
+        errorMessage = error           // 👈 pasar a la pantalla
     )
 }
+
 
 // Pantalla de Crear Cliente
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -48,7 +47,8 @@ fun CrearClienteRoute(
 @Composable
 fun CrearClienteScreen(
     onGuardar: (Cliente) -> Unit,
-    onCancelar: () -> Unit
+    onCancelar: () -> Unit,
+    errorMessage: String? = null
 ) {
     var rut by rememberSaveable { mutableStateOf("") }
     var nombres by rememberSaveable { mutableStateOf("") }
@@ -185,7 +185,15 @@ fun CrearClienteScreen(
                     modifier = Modifier.fillMaxWidth()
                 )
             }
-
+            if (errorMessage != null) {
+                item {
+                    Text(
+                        text = errorMessage,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -215,6 +223,7 @@ fun CrearClienteScreen(
                     ) { Text("Crear cuenta") }
                 }
             }
+
         }
     }
 }

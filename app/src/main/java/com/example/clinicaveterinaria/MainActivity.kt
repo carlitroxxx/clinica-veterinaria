@@ -245,7 +245,14 @@ class MainActivity : ComponentActivity() {
                             "clienteAgendar/{rut}",
                             arguments = listOf(navArgument("rut") { type = NavType.StringType })
                         ) { backStackEntry ->
-                            val rut = backStackEntry.arguments?.getString("rut") ?: ""
+                            val rutProfesional = backStackEntry.arguments?.getString("rut") ?: ""
+                            val ctx = LocalContext.current
+                            val emailSesion = SesionManager.obtenerEmail(ctx)
+                            // buscamos el RUT del cliente por email
+                            val clienteRut = remember(emailSesion) {
+                                emailSesion?.let { Repository.obtenerClientePorEmail(it)?.rut }
+                            }
+
                             var fecha by rememberSaveable { mutableStateOf("") }
                             var hora by rememberSaveable { mutableStateOf("") }
                             var servicio by rememberSaveable { mutableStateOf("") }
@@ -265,14 +272,37 @@ class MainActivity : ComponentActivity() {
                                     if (fecha.isBlank() || hora.isBlank() || servicio.isBlank()) {
                                         ok = null
                                         error = "Completa fecha, hora y servicio"
+                                    } else if (clienteRut.isNullOrBlank()) {
+                                        ok = null
+                                        error = "No se pudo identificar al cliente (sesión)"
                                     } else {
-                                        error = null
-                                        ok = "Reserva creada ✔"
+                                        val res = Repository.agregarReserva(
+                                            clienteRut = clienteRut,
+                                            profesionalRut = rutProfesional,
+                                            fecha = fecha,
+                                            hora = hora,
+                                            servicio = servicio
+                                        )
+                                        if (res.ok) {
+                                            error = null
+                                            ok = "Reserva creada ✔"
+                                            // Navegar a Mis Reservas
+                                            navController.navigate("clienteMisReservas") {
+                                                popUpTo("clienteProfesionales") { inclusive = false }
+                                            }
+                                        } else {
+                                            ok = null
+                                            error = res.mensaje ?: "Error al crear la reserva"
+                                        }
                                     }
                                 },
                                 onBackClick = { navController.popBackStack() }
                             )
                         }
+
+
+
+
                         //Cliente: crear cuenta
                         composable("crearCliente") {
                             CrearClienteRoute(nav = navController)
@@ -314,28 +344,7 @@ class MainActivity : ComponentActivity() {
                                     )
                                 }
                             }
-                            composable("clientePerfil") {
-                                val ctx = LocalContext.current
-                                val emailSesion = SesionManager.obtenerEmail(ctx)
-                                val cliente = remember(emailSesion) {
-                                    emailSesion?.let { Repository.obtenerClientePorEmail(it) }
-                                }
 
-                                if (cliente != null) {
-                                    PerfilClienteScreen(
-                                        mockNombre = "${cliente.nombres} ${cliente.apellidos}",
-                                        mockEmail = cliente.email,
-                                        mockTelefono = cliente.telefono,
-                                        onChangePasswordClick = { /* TODO: cambiar contraseña más adelante */ },
-                                        onLogoutClick = {
-                                            SesionManager.cerrarSesion(ctx)
-                                            navController.navigate("login") {
-                                                popUpTo("login") { inclusive = true }
-                                            }
-                                        }
-                                    )
-                                }
-                            }
                             MisReservasScreen(
                                 reservas = reservas,
                                 onCancelarClick = { reserva: ReservaMock ->
@@ -345,22 +354,29 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
-
-
                         composable("clientePerfil") {
-                            PerfilClienteScreen(
-                                mockNombre = "Carlos Cliente",
-                                mockEmail = "cliente@correo.cl",
-                                mockTelefono = "+56 9 1234 5678",
-                                onChangePasswordClick = { /* sólo front */ },
-                                onLogoutClick = {
-                                    SesionManager.cerrarSesion(context)
-                                    navController.navigate("login") {
-                                        popUpTo("login") { inclusive = true }
+                            val ctx = LocalContext.current
+                            val emailSesion = SesionManager.obtenerEmail(ctx)
+                            val cliente = remember(emailSesion) {
+                                emailSesion?.let { Repository.obtenerClientePorEmail(it) }
+                            }
+
+                            if (cliente != null) {
+                                PerfilClienteScreen(
+                                    mockNombre = "${cliente.nombres} ${cliente.apellidos}",
+                                    mockEmail = cliente.email,
+                                    mockTelefono = cliente.telefono,
+                                    onChangePasswordClick = { /* TODO: cambiar contraseña más adelante */ },
+                                    onLogoutClick = {
+                                        SesionManager.cerrarSesion(ctx)
+                                        navController.navigate("login") {
+                                            popUpTo("login") { inclusive = true }
+                                        }
                                     }
-                                }
-                            )
+                                )
+                            }
                         }
+
 
                         composable("clienteAgregarMascota") {
                             var nombre by rememberSaveable { mutableStateOf("") }

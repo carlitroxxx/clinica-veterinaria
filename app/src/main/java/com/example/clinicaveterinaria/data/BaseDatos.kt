@@ -8,6 +8,8 @@ import android.database.sqlite.SQLiteOpenHelper
 import android.os.Build
 import androidx.annotation.RequiresApi
 import com.example.clinicaveterinaria.model.Cliente
+import com.example.clinicaveterinaria.model.Profesional
+import com.example.clinicaveterinaria.model.Reserva
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -84,43 +86,35 @@ class BaseDatos(context: Context) :
 
         // TURNO PROFESIONAL
         db.execSQL("""
-            CREATE TABLE IF NOT EXISTS turno_profesional(
-                id_turno INTEGER PRIMARY KEY AUTOINCREMENT,
-                profesional_rut TEXT NOT NULL,
-                dia_semana INTEGER NOT NULL,
-                hora_inicio TEXT NOT NULL,
-                hora_fin TEXT NOT NULL,
-                duracion_min INTEGER NOT NULL,
-                FOREIGN KEY(profesional_rut) REFERENCES profesional(rut)
-                    ON UPDATE CASCADE ON DELETE CASCADE
-            );
+          CREATE TABLE IF NOT EXISTS turno_profesional(
+            id_turno INTEGER PRIMARY KEY AUTOINCREMENT,
+            profesional_rut TEXT NOT NULL,
+            dia_semana INTEGER NOT NULL,   -- 1=Lun .. 7=Dom (o tu convención)
+            hora_inicio TEXT NOT NULL,     -- "HH:MM"
+            hora_fin TEXT NOT NULL,        -- "HH:MM"
+            duracion_min INTEGER NOT NULL  -- ej: 30
+          );
         """.trimIndent())
 
-        // CITA
+        // RESERVA
         db.execSQL("""
-            CREATE TABLE IF NOT EXISTS cita(
-                id_cita INTEGER PRIMARY KEY AUTOINCREMENT,
-                profesional_rut TEXT NOT NULL,
+            CREATE TABLE IF NOT EXISTS reserva(
+                id_reserva INTEGER PRIMARY KEY AUTOINCREMENT,
                 cliente_rut TEXT NOT NULL,
-                id_mascota INTEGER NOT NULL,
-                fecha TEXT NOT NULL,
-                hora_inicio TEXT NOT NULL,
-                hora_fin TEXT NOT NULL,
-                estado TEXT NOT NULL DEFAULT 'pendiente' 
-                    CHECK(estado IN ('pendiente','realizada','cancelada','ausente')),
-                motivo TEXT,
-                FOREIGN KEY(profesional_rut) REFERENCES profesional(rut)
-                    ON UPDATE CASCADE ON DELETE RESTRICT,
-                FOREIGN KEY(cliente_rut) REFERENCES cliente(rut)
-                    ON UPDATE CASCADE ON DELETE RESTRICT,
-                FOREIGN KEY(id_mascota) REFERENCES mascota(id_mascota)
-                    ON UPDATE CASCADE ON DELETE RESTRICT
+                profesional_rut TEXT NOT NULL,
+                fecha TEXT NOT NULL,     -- "YYYY-MM-DD"
+                hora TEXT NOT NULL,      -- "HH:MM"
+                servicio TEXT NOT NULL,
+                estado TEXT NOT NULL DEFAULT 'Pendiente', -- Pendiente | Realizada | Cancelada
+                FOREIGN KEY(cliente_rut) REFERENCES cliente(rut) ON UPDATE CASCADE ON DELETE CASCADE
+                -- Si tu tabla profesional usa rut como PK, puedes añadir también:
+                -- ,FOREIGN KEY(profesional_rut) REFERENCES profesional(rut) ON UPDATE CASCADE ON DELETE RESTRICT
             );
         """.trimIndent())
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-        db.execSQL("DROP TABLE IF EXISTS cita")
+        db.execSQL("DROP TABLE IF EXISTS reserva")
         db.execSQL("DROP TABLE IF EXISTS turno_profesional")
         db.execSQL("DROP TABLE IF EXISTS mascota")
         db.execSQL("DROP TABLE IF EXISTS cliente")
@@ -322,59 +316,49 @@ class BaseDatos(context: Context) :
         return lista
     }
 
-    //CITA
-    fun insertarCita(
-        profesionalRut: String,
+
+
+    // INSERT
+    fun insertReserva(
         clienteRut: String,
-        idMascota: Int,
-        fecha: String,        // "YYYY-MM-DD"
-        horaInicio: String,   // "HH:MM"
-        horaFin: String,      // "HH:MM"
-        estado: String = "pendiente",
-        motivo: String? = null
+        profesionalRut: String,
+        fecha: String,
+        hora: String,
+        servicio: String,
+        estado: String = "Pendiente"
     ): Long {
         val cv = ContentValues().apply {
-            put("profesional_rut", profesionalRut)
             put("cliente_rut", clienteRut)
-            put("id_mascota", idMascota)
+            put("profesional_rut", profesionalRut)
             put("fecha", fecha)
-            put("hora_inicio", horaInicio)
-            put("hora_fin", horaFin)
+            put("hora", hora)
+            put("servicio", servicio)
             put("estado", estado)
-            put("motivo", motivo)
         }
-        return writableDatabase.insert("cita", null, cv)
+        return writableDatabase.insert("reserva", null, cv)
     }
 
-    fun actualizarEstadoCita(idCita: Int, nuevoEstado: String): Int {
-        val cv = ContentValues().apply { put("estado", nuevoEstado) }
-        return writableDatabase.update("cita", cv, "id_cita=?", arrayOf(idCita.toString()))
-    }
-
-    fun listarCitasDeCliente(clienteRut: String): List<Map<String, String>> {
-        val lista = mutableListOf<Map<String, String>>()
-        val c = readableDatabase.rawQuery("""
-            SELECT c.id_cita, c.fecha, c.hora_inicio, c.hora_fin, c.estado,
-                   p.nombres || ' ' || p.apellidos as profesional, 
-                   m.nombre as mascota, c.motivo
-            FROM cita c
-            JOIN profesional p ON p.rut = c.profesional_rut
-            JOIN mascota m ON m.id_mascota = c.id_mascota
-            WHERE c.cliente_rut=?
-            ORDER BY c.fecha DESC, c.hora_inicio DESC
-        """.trimIndent(), arrayOf(clienteRut))
-        c.use { cur ->
-            while (cur.moveToNext()) {
+    // LISTAR por cliente
+    fun getReservasPorCliente(rutCliente: String): List<Reserva> {
+        val lista = mutableListOf<Reserva>()
+        readableDatabase.rawQuery(
+            """
+        SELECT id_reserva, fecha, hora, servicio, estado, profesional_rut
+        FROM reserva
+        WHERE cliente_rut = ?
+        ORDER BY fecha DESC, hora DESC
+        """.trimIndent(),
+            arrayOf(rutCliente)
+        ).use { c ->
+            while (c.moveToNext()) {
                 lista.add(
-                    mapOf(
-                        "id_cita" to cur.getInt(0).toString(),
-                        "fecha" to cur.getString(1),
-                        "hora_inicio" to cur.getString(2),
-                        "hora_fin" to cur.getString(3),
-                        "estado" to cur.getString(4),
-                        "profesional" to cur.getString(5),
-                        "mascota" to cur.getString(6),
-                        "motivo" to (cur.getString(7) ?: "")
+                    Reserva(
+                        id = c.getLong(0),
+                        fecha = c.getString(1),
+                        hora = c.getString(2),
+                        servicio = c.getString(3),
+                        estado = c.getString(4),
+                        profesionalRut = c.getString(5)
                     )
                 )
             }
@@ -382,70 +366,98 @@ class BaseDatos(context: Context) :
         return lista
     }
 
-    //Horarios disponibles según turnos y citas existentes
-    @RequiresApi(Build.VERSION_CODES.O)
-    fun getHorariosDisponibles(profesionalRut: String, fecha: String): List<String> {
-        // 1) Día de semana 0..6
-        val diaSemana = diaSemanaDeFecha(fecha)
+    // CANCELAR (marca estado)
+    fun cancelarReserva(idReserva: Long): Int {
+        val cv = ContentValues().apply { put("estado", "Cancelada") }
+        return writableDatabase.update("reserva", cv, "id_reserva = ?", arrayOf(idReserva.toString()))
+    }
 
-        //Para cada turno del día, generamos bloques y restamos los ocupados
-        val ocupados = citasOcupadas(profesionalRut, fecha).toMutableSet()
-        val disponibles = mutableListOf<String>()
-
-        val c = readableDatabase.rawQuery("""
-            SELECT hora_inicio, hora_fin, duracion_min
-            FROM turno_profesional
-            WHERE profesional_rut=? AND dia_semana=?
-        """.trimIndent(), arrayOf(profesionalRut, diaSemana.toString()))
-
-        c.use { cur ->
-            while (cur.moveToNext()) {
-                val hIni = cur.getString(0)
-                val hFin = cur.getString(1)
-                val dur = cur.getInt(2)
-
-                var t = aMinutos(hIni)
-                val fin = aMinutos(hFin)
-                while (t + dur <= fin) {
-                    val slot = aHora(t)
-                    if (!ocupados.contains(slot)) {
-                        disponibles.add(slot)
-                    }
-                    t += dur
-                }
+    fun getProfesionales(): List<Profesional> {
+        val out = mutableListOf<Profesional>()
+        readableDatabase.rawQuery(
+            "SELECT nombres, apellidos, rut, genero, fechaNacimiento, especialidad, email, telefono, password FROM profesional",
+            null
+        ).use { c ->
+            while (c.moveToNext()) {
+                out.add(
+                    Profesional(
+                        nombres = c.getString(0),
+                        apellidos = c.getString(1),
+                        rut = c.getString(2),
+                        genero = c.getString(3),
+                        fechaNacimiento = c.getString(4),
+                        especialidad = c.getString(5),
+                        email = c.getString(6),
+                        telefono = c.getString(7),
+                        password = c.getString(8)
+                    )
+                )
             }
         }
-        return disponibles.sorted()
+        return out
     }
 
-    private fun citasOcupadas(profesionalRut: String, fecha: String): Set<String> {
-        val set = mutableSetOf<String>()
-        val c = readableDatabase.rawQuery("""
-            SELECT hora_inicio
-            FROM cita
-            WHERE profesional_rut=? AND fecha=? AND estado IN ('pendiente','realizada','ausente')
-        """.trimIndent(), arrayOf(profesionalRut, fecha))
-        c.use { cur ->
-            while (cur.moveToNext()) set.add(cur.getString(0))
+    fun getProfesional(rut: String): com.example.clinicaveterinaria.model.Profesional? {
+        readableDatabase.rawQuery(
+            "SELECT nombres, apellidos, rut, genero, fechaNacimiento, especialidad, email, telefono, password FROM Profesional WHERE rut=? LIMIT 1",
+            arrayOf(rut)
+        ).use { c ->
+            return if (c.moveToFirst()) {
+                com.example.clinicaveterinaria.model.Profesional(
+                    nombres = c.getString(0),
+                    apellidos = c.getString(1),
+                    rut = c.getString(2),
+                    genero = c.getString(3),
+                    fechaNacimiento = c.getString(4),
+                    especialidad = c.getString(5),
+                    email = c.getString(6),
+                    telefono = c.getString(7),
+                    password = c.getString(8)
+                )
+            } else null
         }
-        return set
     }
 
-    private fun aMinutos(hhmm: String): Int {
-        val p = hhmm.split(":")
-        return p[0].toInt() * 60 + p[1].toInt()
+    // ---------- TURNOS ----------
+    data class TurnoDb(
+        val diaSemana: Int,
+        val horaInicio: String,  // "HH:MM"
+        val horaFin: String,     // "HH:MM"
+        val duracionMin: Int
+    )
+
+    fun getTurnosProfesional(rut: String): List<TurnoDb> {
+        val out = mutableListOf<TurnoDb>()
+        readableDatabase.rawQuery(
+            "SELECT dia_semana, hora_inicio, hora_fin, duracion_min FROM turno_profesional WHERE profesional_rut=?",
+            arrayOf(rut)
+        ).use { c ->
+            while (c.moveToNext()) {
+                out.add(
+                    TurnoDb(
+                        diaSemana = c.getInt(0),
+                        horaInicio = c.getString(1),
+                        horaFin = c.getString(2),
+                        duracionMin = c.getInt(3)
+                    )
+                )
+            }
+        }
+        return out
     }
 
-    private fun aHora(mins: Int): String {
-        val h = mins / 60
-        val m = mins % 60
-        return "%02d:%02d".format(h, m)
+    // Reservas existentes de un profesional en una fecha (para excluir horas ya tomadas)
+    fun getHorasReservadas(profRut: String, fecha: String): Set<String> {
+        val out = mutableSetOf<String>()
+        readableDatabase.rawQuery(
+            "SELECT hora FROM reserva WHERE profesional_rut=? AND fecha=? AND estado <> 'Cancelada'",
+            arrayOf(profRut, fecha)
+        ).use { c ->
+            while (c.moveToNext()) out.add(c.getString(0))
+        }
+        return out
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
-    private fun diaSemanaDeFecha(fecha: String): Int {
-        val ld = LocalDate.parse(fecha, DateTimeFormatter.ISO_LOCAL_DATE)
-        val dow = ld.dayOfWeek.value // 1..7 (L..D)
-        return (dow - 1)
-    }
+
+
 }
