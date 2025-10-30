@@ -34,11 +34,14 @@ import com.example.clinicaveterinaria.R
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import java.time.Instant
+import java.time.ZoneId
+import java.time.ZoneOffset
 
 data class DiaCalendario(
     val fecha: LocalDate,
-    val nombreDiaSemana: String, // "Lun."
-    val numeroDia: String      // "30"
+    val nombreDiaSemana: String,
+    val numeroDia: String
 )
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -55,12 +58,10 @@ private fun generarProximos7Dias(): List<DiaCalendario> {
     }
 }
 
-//Horarios disponibles
 private val horariosDisponibles = listOf(
     "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
     "14:00", "14:30", "15:00", "15:30"
 )
-
 
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
@@ -74,7 +75,8 @@ fun AgendarScreen(
     onServicioChange: (String) -> Unit,
     mensajeError: String?,
     mensajeExito: String?,
-    onConfirmarClick: () -> Unit
+    onConfirmarClick: () -> Unit,
+    onBackClick: () -> Unit
 ) {
 
     val dias = remember { generarProximos7Dias() }
@@ -90,12 +92,17 @@ fun AgendarScreen(
         onHoraChange(horaSeleccionada)
     }
 
+    val todayUtcStartMillis = remember {
+        LocalDate.now(ZoneId.of("UTC")).atStartOfDay().toInstant(ZoneOffset.UTC).toEpochMilli()
+    }
+
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Agendar Cita") },
                 navigationIcon = {
-                    IconButton(onClick = { /* TODO: navController.popBackStack() */ }) {
+                    IconButton(onClick = onBackClick) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver")
                     }
                 },
@@ -115,11 +122,13 @@ fun AgendarScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
+
             InfoProfesionalCard(
-                nombre = "Dr. Juan Pérez",
-                especialidad = "Cardiología Veterinaria",
-                fotoResId = R.drawable.perfildoctor1
+                nombre = "Dr. Juan Pérez", // Simulación
+                especialidad = "Cardiología Veterinaria", // Simulación
+                fotoResId = R.drawable.perfildoctor1 // Simulación
             )
+
             Text(
                 "Paso 1: Selecciona el día",
                 style = MaterialTheme.typography.titleMedium,
@@ -132,6 +141,7 @@ fun AgendarScreen(
                     diaSeleccionado = nuevoDia
                 }
             )
+
             Text(
                 "Paso 2: Selecciona la hora",
                 style = MaterialTheme.typography.titleMedium,
@@ -144,6 +154,7 @@ fun AgendarScreen(
                     horaSeleccionada = nuevaHora
                 }
             )
+
             Text(
                 "Paso 3: Detalla el motivo",
                 style = MaterialTheme.typography.titleMedium,
@@ -163,6 +174,8 @@ fun AgendarScreen(
             ) {
                 Text("Confirmar Reserva")
             }
+
+            // --- Feedback (Mensajes) ---
             if (mensajeError != null) {
                 Text(mensajeError, color = MaterialTheme.colorScheme.error)
             }
@@ -261,8 +274,8 @@ fun GrillaDeHoras(
     onHoraClick: (String) -> Unit
 ) {
     LazyVerticalGrid(
-        columns = GridCells.Adaptive(minSize = 90.dp), // Se adapta al tamaño de pantalla
-        modifier = Modifier.height(200.dp), // Damos una altura fija para la grilla
+        columns = GridCells.Adaptive(minSize = 90.dp),
+        modifier = Modifier.height(200.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
@@ -271,7 +284,7 @@ fun GrillaDeHoras(
             val colors = if (isSelected) {
                 ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             } else {
-                ButtonDefaults.outlinedButtonColors() // Botón con borde
+                ButtonDefaults.outlinedButtonColors()
             }
 
             Button(

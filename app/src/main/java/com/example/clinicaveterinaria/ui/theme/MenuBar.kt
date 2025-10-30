@@ -86,7 +86,8 @@ fun MenuBar() {
                     onServicioChange = { servicio = it },
                     mensajeError = mensajeError,
                     mensajeExito = mensajeExito,
-                    onConfirmarClick = onConfirmarClick
+                    onConfirmarClick = onConfirmarClick,
+                    onBackClick = { navController.popBackStack() }
                 )
             }
         }
