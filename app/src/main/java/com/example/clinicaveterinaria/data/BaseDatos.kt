@@ -375,7 +375,7 @@ class BaseDatos(context: Context) :
     fun getProfesionales(): List<Profesional> {
         val out = mutableListOf<Profesional>()
         readableDatabase.rawQuery(
-            "SELECT nombres, apellidos, rut, genero, fechaNacimiento, especialidad, email, telefono, password FROM profesional",
+            "SELECT nombres, apellidos, rut, genero, fecha_nacimiento, especialidad, email, telefono, password FROM profesional",
             null
         ).use { c ->
             while (c.moveToNext()) {
@@ -399,7 +399,7 @@ class BaseDatos(context: Context) :
 
     fun getProfesional(rut: String): com.example.clinicaveterinaria.model.Profesional? {
         readableDatabase.rawQuery(
-            "SELECT nombres, apellidos, rut, genero, fechaNacimiento, especialidad, email, telefono, password FROM Profesional WHERE rut=? LIMIT 1",
+            "SELECT nombres, apellidos, rut, genero, fecha_nacimiento, especialidad, email, telefono, password FROM Profesional WHERE rut=? LIMIT 1",
             arrayOf(rut)
         ).use { c ->
             return if (c.moveToFirst()) {

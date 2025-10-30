@@ -1,8 +1,6 @@
 package com.example.clinicaveterinaria.ui.cliente
 
-import android.os.Build
 import androidx.annotation.DrawableRes
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -11,7 +9,6 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -31,42 +28,38 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.clinicaveterinaria.R
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
+import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Locale
-import java.time.Instant
-import java.time.ZoneId
-import java.time.ZoneOffset
 
 data class DiaCalendario(
-    val fecha: LocalDate,
-    val nombreDiaSemana: String,
-    val numeroDia: String
+    val fechaIso: String,        // "yyyy-MM-dd"
+    val nombreDiaSemana: String, // "Lun", "Mar", ...
+    val numeroDia: String        // "1", "2", ...
 )
 
-@RequiresApi(Build.VERSION_CODES.O)
+/** Genera los próximos 7 días sin usar java.time */
 private fun generarProximos7Dias(): List<DiaCalendario> {
     val locale = Locale("es", "ES")
-    val hoy = LocalDate.now()
+    val cal = Calendar.getInstance() // hoy
+    val sdfIso = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+    val sdfNombre = SimpleDateFormat("EEE", locale)
+    val sdfNum = SimpleDateFormat("d", locale)
+
     return List(7) { i ->
-        val fecha = hoy.plusDays(i.toLong())
-        DiaCalendario(
-            fecha = fecha,
-            nombreDiaSemana = fecha.format(DateTimeFormatter.ofPattern("E", locale)).capitalize(locale),
-            numeroDia = fecha.format(DateTimeFormatter.ofPattern("d"))
-        )
+        val c = cal.clone() as Calendar
+        c.add(Calendar.DAY_OF_MONTH, i)
+        val iso = sdfIso.format(c.time)
+        val nombre = sdfNombre.format(c.time).replaceFirstChar { it.uppercase(locale) }
+        val num = sdfNum.format(c.time)
+        DiaCalendario(iso, nombre, num)
     }
 }
 
-private val horariosDisponibles = listOf(
-    "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
-    "14:00", "14:30", "15:00", "15:30"
-)
-
-@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AgendarScreen(
+    // datos que ya usabas
     fecha: String,
     onFechaChange: (String) -> Unit,
     hora: String,
@@ -76,26 +69,25 @@ fun AgendarScreen(
     mensajeError: String?,
     mensajeExito: String?,
     onConfirmarClick: () -> Unit,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    // NUEVO: para mostrar ficha del profesional y los horarios libres
+    profesionalNombre: String? = null,
+    profesionalEspecialidad: String? = null,
+    @DrawableRes profesionalFotoResId: Int? = null,
+    horariosDisponibles: List<String> = emptyList()
 ) {
-
     val dias = remember { generarProximos7Dias() }
 
-    var diaSeleccionado by remember { mutableStateOf(dias.first()) }
-
-    var horaSeleccionada by remember { mutableStateOf("") }
-
-    LaunchedEffect(diaSeleccionado) {
-        onFechaChange(diaSeleccionado.fecha.format(DateTimeFormatter.ISO_LOCAL_DATE))
+    // Selección interna (se sincroniza con tus estados externos via callbacks)
+    var diaSeleccionado by remember(fecha) {
+        mutableStateOf(
+            dias.find { it.fechaIso == fecha } ?: dias.first()
+        )
     }
-    LaunchedEffect(horaSeleccionada) {
-        onHoraChange(horaSeleccionada)
-    }
+    var horaSeleccionada by remember(hora) { mutableStateOf(hora) }
 
-    val todayUtcStartMillis = remember {
-        LocalDate.now(ZoneId.of("UTC")).atStartOfDay().toInstant(ZoneOffset.UTC).toEpochMilli()
-    }
-
+    LaunchedEffect(diaSeleccionado.fechaIso) { onFechaChange(diaSeleccionado.fechaIso) }
+    LaunchedEffect(horaSeleccionada) { onHoraChange(horaSeleccionada) }
 
     Scaffold(
         topBar = {
@@ -103,7 +95,7 @@ fun AgendarScreen(
                 title = { Text("Agendar Cita") },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -123,11 +115,14 @@ fun AgendarScreen(
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
 
-            InfoProfesionalCard(
-                nombre = "Dr. Juan Pérez", // Simulación
-                especialidad = "Cardiología Veterinaria", // Simulación
-                fotoResId = R.drawable.perfildoctor1 // Simulación
-            )
+            // ----------- Info profesional (opcional) -----------
+            if (!profesionalNombre.isNullOrBlank() || !profesionalEspecialidad.isNullOrBlank()) {
+                InfoProfesionalCard(
+                    nombre = profesionalNombre ?: "Profesional",
+                    especialidad = profesionalEspecialidad ?: "",
+                    fotoResId = profesionalFotoResId ?: R.drawable.logo // fallback simple
+                )
+            }
 
             Text(
                 "Paso 1: Selecciona el día",
@@ -139,6 +134,10 @@ fun AgendarScreen(
                 diaSeleccionado = diaSeleccionado,
                 onDiaClick = { nuevoDia ->
                     diaSeleccionado = nuevoDia
+                    // Al cambiar de día, limpiamos la hora si ya no pertenece a la lista
+                    if (horaSeleccionada.isNotBlank() && horaSeleccionada !in horariosDisponibles) {
+                        horaSeleccionada = ""
+                    }
                 }
             )
 
@@ -150,9 +149,7 @@ fun AgendarScreen(
             GrillaDeHoras(
                 horarios = horariosDisponibles,
                 horaSeleccionada = horaSeleccionada,
-                onHoraClick = { nuevaHora ->
-                    horaSeleccionada = nuevaHora
-                }
+                onHoraClick = { nuevaHora -> horaSeleccionada = nuevaHora }
             )
 
             Text(
@@ -163,30 +160,32 @@ fun AgendarScreen(
             OutlinedTextField(
                 value = servicio,
                 onValueChange = onServicioChange,
-                label = { Text("Servicio o Motivo de la consulta") },
-                isError = mensajeError?.contains("servicio") == true,
+                label = { Text("Servicio o motivo de la consulta") },
+                singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
 
             Button(
                 onClick = onConfirmarClick,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                enabled = fecha.isNotBlank() && hora.isNotBlank() && servicio.isNotBlank()
             ) {
                 Text("Confirmar Reserva")
             }
 
-            //Feedback (Mensajes)
+            // Feedback
             if (mensajeError != null) {
                 Text(mensajeError, color = MaterialTheme.colorScheme.error)
             }
             if (mensajeExito != null) {
-                Text(mensajeExito, color = Color(0xFF2E7D32)) // Verde éxito
+                Text(mensajeExito, color = Color(0xFF2E7D32))
             }
         }
     }
 }
+
 @Composable
-fun InfoProfesionalCard(
+private fun InfoProfesionalCard(
     nombre: String,
     especialidad: String,
     @DrawableRes fotoResId: Int
@@ -210,22 +209,17 @@ fun InfoProfesionalCard(
                     .border(1.dp, MaterialTheme.colorScheme.primary, CircleShape)
             )
             Column {
-                Text(
-                    text = nombre,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = especialidad,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.primary
-                )
+                Text(text = nombre, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                if (especialidad.isNotBlank()) {
+                    Text(text = especialidad, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
+                }
             }
         }
     }
 }
+
 @Composable
-fun CalendarioHorizontal(
+private fun CalendarioHorizontal(
     dias: List<DiaCalendario>,
     diaSeleccionado: DiaCalendario,
     onDiaClick: (DiaCalendario) -> Unit
@@ -234,7 +228,8 @@ fun CalendarioHorizontal(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        items(dias) { dia ->
+        items(dias.size) { index ->
+            val dia = dias[index]
             val isSelected = dia == diaSeleccionado
             val backgroundColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
             val contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
@@ -251,24 +246,16 @@ fun CalendarioHorizontal(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
-                    Text(
-                        text = dia.nombreDiaSemana,
-                        fontSize = 12.sp,
-                        color = contentColor
-                    )
-                    Text(
-                        text = dia.numeroDia,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = contentColor
-                    )
+                    Text(text = dia.nombreDiaSemana, fontSize = 12.sp, color = contentColor)
+                    Text(text = dia.numeroDia, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = contentColor)
                 }
             }
         }
     }
 }
+
 @Composable
-fun GrillaDeHoras(
+private fun GrillaDeHoras(
     horarios: List<String>,
     horaSeleccionada: String,
     onHoraClick: (String) -> Unit
@@ -282,21 +269,17 @@ fun GrillaDeHoras(
         items(horarios) { hora ->
             val isSelected = hora == horaSeleccionada
             val colors = if (isSelected) {
-                ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary)
             } else {
                 ButtonDefaults.outlinedButtonColors()
             }
-
             Button(
                 onClick = { onHoraClick(hora) },
                 colors = colors,
                 border = if (!isSelected) ButtonDefaults.outlinedButtonBorder else null,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(
-                    text = hora,
-                    textAlign = TextAlign.Center
-                )
+                Text(text = hora, textAlign = TextAlign.Center)
             }
         }
     }

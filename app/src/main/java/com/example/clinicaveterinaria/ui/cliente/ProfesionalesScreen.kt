@@ -67,23 +67,24 @@ fun ProfesionalesScreen(
                         .padding(bottom = 16.dp)
                 )
             }
-
-            //Lista de profesionales
-            items(profesionales) { profesional ->
-
-                val fotoId = when (profesional.genero) {
-                    "Femenino" -> R.drawable.perfildoctora1
-                    "Masculino" -> R.drawable.perfildoctor1
-                    else -> R.drawable.logo
+            if (profesionales.isEmpty()) {
+                item {
+                    EmptyProfesionalesState()
                 }
-
-                ProfesionalCard(
-                    profesional = profesional,
-                    fotoResId = fotoId,
-                    onClick = {
-                        onProfesionalClick(profesional.rut)
+            } else {
+                // Lista de profesionales
+                items(profesionales) { profesional ->
+                    val fotoId = when (profesional.genero) {
+                        "Femenino" -> R.drawable.perfildoctora1
+                        "Masculino" -> R.drawable.perfildoctor1
+                        else -> R.drawable.logo
                     }
-                )
+                    ProfesionalCard(
+                        profesional = profesional,
+                        fotoResId = fotoId,
+                        onClick = { onProfesionalClick(profesional.rut) }
+                    )
+                }
             }
         }
     }
@@ -129,6 +130,30 @@ fun ProfesionalCard(
                     color = MaterialTheme.colorScheme.primary // Color del tema
                 )
             }
+        }
+    }
+}
+@Composable
+private fun EmptyProfesionalesState() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text = "Aún no hay profesionales disponibles",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+            Text(
+                text = "Vuelve más tarde o refresca la pantalla.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }

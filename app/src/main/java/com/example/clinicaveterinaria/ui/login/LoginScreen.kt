@@ -93,32 +93,36 @@ fun LoginScreen(nav: NavHostController, context: android.content.Context) {
                 val passTrim = contrasena.trim()
                 mensaje = null
 
-                when {
-                    emailTrim == "cliente@correo.cl" && passTrim == "1234" -> {
-                        SesionManager.iniciarSesion(context, emailTrim, "cliente")
-                        nav.navigate("clienteProfesionales") {
-                            popUpTo("login") { inclusive = true }
-                        }
+                // 1) Cliente (BD)
+                val cliente = Repository.obtenerClientePorEmail(emailTrim)
+                if (cliente != null && cliente.contrasena == passTrim) {
+                    SesionManager.iniciarSesion(context, cliente.email, "cliente")
+                    nav.navigate("clienteProfesionales") {
+                        popUpTo("login") { inclusive = true }
                     }
-
-                    //admin fijo
-                    emailTrim == "admin@correo.cl" && passTrim == "1234" -> {
-                        SesionManager.iniciarSesion(context, emailTrim, "admin")
-                        nav.navigate("adminHome") {
-                            popUpTo("login") { inclusive = true }
-                        }
-                    }
-
-                    //profesional
-                    Repository.profesionales.any { it.email == emailTrim && it.password == passTrim } -> {
-                        SesionManager.iniciarSesion(context, emailTrim, "profesional")
-                        nav.navigate("profesionalHome") {
-                            popUpTo("login") { inclusive = true }
-                        }
-                    }
-
-                    else -> mensaje = "Credenciales inválidas ❌"
+                    return@Button
                 }
+
+                // 2) Admin fijo (si lo quieres mantener)
+                if (emailTrim == "admin@correo.cl" && passTrim == "1234") {
+                    SesionManager.iniciarSesion(context, emailTrim, "admin")
+                    nav.navigate("adminHome") {
+                        popUpTo("login") { inclusive = true }
+                    }
+                    return@Button
+                }
+
+                // 3) Profesional (lista en memoria / BD como ya lo tenías)
+                if (Repository.profesionales.any { it.email == emailTrim && it.password == passTrim }) {
+                    SesionManager.iniciarSesion(context, emailTrim, "profesional")
+                    nav.navigate("profesionalHome") {
+                        popUpTo("login") { inclusive = true }
+                    }
+                    return@Button
+                }
+
+                // Si nada calza:
+                mensaje = "Credenciales inválidas ❌"
             },
             modifier = Modifier
                 .fillMaxWidth()
@@ -128,9 +132,8 @@ fun LoginScreen(nav: NavHostController, context: android.content.Context) {
                 containerColor = Color(0xFF00AAB0),
                 contentColor = Color.White
             )
-        ) {
-            Text("Ingresar", fontSize = 18.sp)
-        }
+        ) { Text("Ingresar", fontSize = 18.sp) }
+
         Spacer(modifier = Modifier.height(12.dp))
 
         OutlinedButton(
