@@ -255,7 +255,21 @@ class MainActivity : ComponentActivity() {
                                 onBackClick = { navController.popBackStack() }
                             )
                         }
-
+                        composable("crearCliente") {
+                            CrearClienteRoute(
+                                nav = navController,
+                                onGuardarCliente = { cliente ->
+                                    // TODO: por ahora solo front. Aquí podrías:
+                                    // - Guardarlo en memoria temporal o mock
+                                    // - Iniciar sesión y redirigir (si quieres reproducir tu flujo)
+                                    //   SesionManager.iniciarSesion(context, cliente.email, "cliente")
+                                    //   navController.navigate("clienteProfesionales") {
+                                    //       popUpTo("login") { inclusive = true }
+                                    //   }
+                                    navController.popBackStack() // comportamiento simple por ahora
+                                }
+                            )
+                        }
                         composable("clienteMisReservas") {
                             val reservas = remember {
                                 // ✅ Fijamos el tipo para evitar el error de inferencia

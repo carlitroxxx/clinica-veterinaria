@@ -1,5 +1,6 @@
 package com.example.clinicaveterinaria.ui.login
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -130,6 +131,23 @@ fun LoginScreen(nav: NavHostController, context: android.content.Context) {
         ) {
             Text("Ingresar", fontSize = 18.sp)
         }
+        Spacer(modifier = Modifier.height(12.dp))
+
+        OutlinedButton(
+            onClick = { nav.navigate("crearCliente") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp),
+            shape = RoundedCornerShape(6.dp),
+            border = BorderStroke(1.dp, Color(0xFF00AAB0)),
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = Color(0xFF00AAB0)
+            )
+        ) {
+            Text("Registrarme", fontSize = 16.sp)
+        }
+
+
 
         Spacer(modifier = Modifier.height(20.dp))
 
