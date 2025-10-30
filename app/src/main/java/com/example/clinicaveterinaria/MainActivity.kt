@@ -25,7 +25,7 @@ import com.example.clinicaveterinaria.ui.login.LoginScreen
 import com.example.clinicaveterinaria.ui.profesional.HomeProfesionalScreen
 import com.example.clinicaveterinaria.ui.profesional.PerfilProfesionalScreen
 import com.example.clinicaveterinaria.ui.theme.ClinicaVeterinariaTheme
-
+import com.example.clinicaveterinaria.ui.cliente.*
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -152,6 +152,9 @@ class MainActivity : ComponentActivity() {
                         // --- Profesional ---
                         composable("profesionalHome") { HomeProfesionalScreen() }
                         composable("perfilProfesional") { PerfilProfesionalScreen(navController) }
+
+                        // --- Cliente ---
+
                     }
                 }
             }

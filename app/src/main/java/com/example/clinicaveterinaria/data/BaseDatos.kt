@@ -5,6 +5,10 @@ import android.content.Context
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
+import android.os.Build
+import androidx.annotation.RequiresApi
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 /**
  * SQLiteOpenHelper simple, sin capas extra. Mantiene el diseño base:
@@ -41,6 +45,7 @@ class BaseDatos(context: Context) :
         }
     }
 
+
     override fun onCreate(db: SQLiteDatabase) {
         // PROFESIONAL
         db.execSQL("""
@@ -49,7 +54,7 @@ class BaseDatos(context: Context) :
                 nombres TEXT NOT NULL,
                 apellidos TEXT NOT NULL,
                 genero TEXT NOT NULL,
-                fecha_nacimiento TEXT NOT NULL,     -- "YYYY-MM-DD"
+                fecha_nacimiento TEXT NOT NULL,
                 especialidad TEXT NOT NULL,
                 email TEXT NOT NULL,
                 telefono TEXT NOT NULL,
@@ -57,14 +62,15 @@ class BaseDatos(context: Context) :
             );
         """.trimIndent())
 
-        // CLIENTE
+        // CLIENTE (ya nace con password en v2)
         db.execSQL("""
             CREATE TABLE IF NOT EXISTS cliente(
                 rut TEXT PRIMARY KEY,
                 nombres TEXT NOT NULL,
                 apellidos TEXT NOT NULL,
                 email TEXT NOT NULL,
-                telefono TEXT NOT NULL
+                telefono TEXT NOT NULL,
+                password TEXT NOT NULL DEFAULT '1234'
             );
         """.trimIndent())
 
@@ -74,10 +80,10 @@ class BaseDatos(context: Context) :
                 id_mascota INTEGER PRIMARY KEY AUTOINCREMENT,
                 cliente_rut TEXT NOT NULL,
                 nombre TEXT NOT NULL,
-                especie TEXT NOT NULL,              -- "perro","gato", etc.
+                especie TEXT NOT NULL,
                 raza TEXT,
-                sexo TEXT,                          -- "macho","hembra"
-                fecha_nacimiento TEXT,              -- "YYYY-MM-DD"
+                sexo TEXT,
+                fecha_nacimiento TEXT,
                 FOREIGN KEY(cliente_rut) REFERENCES cliente(rut)
                     ON UPDATE CASCADE ON DELETE CASCADE
             );
@@ -88,9 +94,9 @@ class BaseDatos(context: Context) :
             CREATE TABLE IF NOT EXISTS turno_profesional(
                 id_turno INTEGER PRIMARY KEY AUTOINCREMENT,
                 profesional_rut TEXT NOT NULL,
-                dia_semana INTEGER NOT NULL,        -- 0..6 (L..D)
-                hora_inicio TEXT NOT NULL,          -- "HH:MM"
-                hora_fin TEXT NOT NULL,             -- "HH:MM"
+                dia_semana INTEGER NOT NULL,
+                hora_inicio TEXT NOT NULL,
+                hora_fin TEXT NOT NULL,
                 duracion_min INTEGER NOT NULL,
                 FOREIGN KEY(profesional_rut) REFERENCES profesional(rut)
                     ON UPDATE CASCADE ON DELETE CASCADE
@@ -104,9 +110,9 @@ class BaseDatos(context: Context) :
                 profesional_rut TEXT NOT NULL,
                 cliente_rut TEXT NOT NULL,
                 id_mascota INTEGER NOT NULL,
-                fecha TEXT NOT NULL,                -- "YYYY-MM-DD"
-                hora_inicio TEXT NOT NULL,          -- "HH:MM"
-                hora_fin TEXT NOT NULL,             -- "HH:MM"
+                fecha TEXT NOT NULL,
+                hora_inicio TEXT NOT NULL,
+                hora_fin TEXT NOT NULL,
                 estado TEXT NOT NULL DEFAULT 'pendiente' 
                     CHECK(estado IN ('pendiente','realizada','cancelada','ausente')),
                 motivo TEXT,
@@ -128,8 +134,7 @@ class BaseDatos(context: Context) :
         db.execSQL("DROP TABLE IF EXISTS profesional")
         onCreate(db)
     }
-
-    // =========================
+// =========================
     // =      PROFESIONAL      =
     // =========================
 
@@ -162,10 +167,8 @@ class BaseDatos(context: Context) :
             rowId = db.insert("profesional", null, cv)
 
             if (rowId != -1L) {
-                // Lunes(0) a Viernes(4), 10:00–16:00, bloques de 30 min
-                insertarTurnosDefaultParaProfesional(rut, duracionMin = 30, horaInicio = "10:00", horaFin = "16:00")
+                insertarTurnosDefaultParaProfesional(rut, 30, "10:00", "16:00")
             }
-
             db.setTransactionSuccessful()
         } finally {
             db.endTransaction()
@@ -193,7 +196,6 @@ class BaseDatos(context: Context) :
             put("email", email)
             put("telefono", telefono)
             put("password", password)
-
         }
         return writableDatabase.update("profesional", cv, "rut=?", arrayOf(rut))
     }
@@ -230,6 +232,46 @@ class BaseDatos(context: Context) :
         return writableDatabase.delete("profesional", "rut=?", arrayOf(rut))
     }
 
+    fun validarProfesional(email: String, password: String): Boolean {
+        val c = readableDatabase.rawQuery(
+            "SELECT 1 FROM profesional WHERE email=? AND password=? LIMIT 1",
+            arrayOf(email, password)
+        )
+        c.use { return it.moveToFirst() }
+    }
+
+    /** Agenda de un profesional en una fecha (YYYY-MM-DD) */
+    fun getAgendaProfesionalPorFecha(profesionalRut: String, fecha: String): List<Map<String, String>> {
+        val lista = mutableListOf<Map<String, String>>()
+        val c = readableDatabase.rawQuery(
+            """
+            SELECT c.id_cita, c.hora_inicio, c.hora_fin, c.estado,
+                   m.nombre AS mascota, cl.nombres || ' ' || cl.apellidos AS cliente, c.motivo
+            FROM cita c
+            JOIN mascota m ON m.id_mascota = c.id_mascota
+            JOIN cliente cl ON cl.rut = c.cliente_rut
+            WHERE c.profesional_rut = ? AND c.fecha = ?
+            ORDER BY c.hora_inicio
+            """.trimIndent(),
+            arrayOf(profesionalRut, fecha)
+        )
+        c.use { cursor ->
+            while (cursor.moveToNext()) {
+                val item = mapOf(
+                    "id_cita" to cursor.getInt(0).toString(),
+                    "hora_inicio" to cursor.getString(1),
+                    "hora_fin" to cursor.getString(2),
+                    "estado" to cursor.getString(3),
+                    "mascota" to cursor.getString(4),
+                    "cliente" to cursor.getString(5),
+                    "motivo" to (cursor.getString(6) ?: "")
+                )
+                lista.add(item)
+            }
+        }
+        return lista
+    }
+
     // =========================
     // =        CLIENTE        =
     // =========================
@@ -239,7 +281,8 @@ class BaseDatos(context: Context) :
         nombres: String,
         apellidos: String,
         email: String,
-        telefono: String
+        telefono: String,
+        password: String = "1234"
     ): Long {
         val cv = ContentValues().apply {
             put("rut", rut)
@@ -247,8 +290,17 @@ class BaseDatos(context: Context) :
             put("apellidos", apellidos)
             put("email", email)
             put("telefono", telefono)
+            put("password", password)
         }
         return writableDatabase.insert("cliente", null, cv)
+    }
+
+    fun validarCliente(email: String, password: String): Boolean {
+        val c = readableDatabase.rawQuery(
+            "SELECT 1 FROM cliente WHERE email=? AND password=? LIMIT 1",
+            arrayOf(email, password)
+        )
+        c.use { return it.moveToFirst() }
     }
 
     fun listaCliente(): List<Map<String, String>> {
@@ -273,6 +325,14 @@ class BaseDatos(context: Context) :
             }
         }
         return lista
+    }
+
+    fun clienteTieneMascotas(clienteRut: String): Boolean {
+        val c = readableDatabase.rawQuery(
+            "SELECT 1 FROM mascota WHERE cliente_rut=? LIMIT 1",
+            arrayOf(clienteRut)
+        )
+        c.use { return it.moveToFirst() }
     }
 
     // =========================
@@ -326,53 +386,6 @@ class BaseDatos(context: Context) :
     }
 
     // =========================
-    // =   TURNO PROFESIONAL   =
-    // =========================
-
-    fun insertarTurnoProfesional(
-        profesionalRut: String,
-        diaSemana: Int,
-        horaInicio: String,
-        horaFin: String,
-        duracionMin: Int
-    ): Long {
-        val cv = ContentValues().apply {
-            put("profesional_rut", profesionalRut)
-            put("dia_semana", diaSemana)
-            put("hora_inicio", horaInicio)
-            put("hora_fin", horaFin)
-            put("duracion_min", duracionMin)
-        }
-        return writableDatabase.insert("turno_profesional", null, cv)
-    }
-
-    fun listarTurnosProfesional(profesionalRut: String): List<Map<String, String>> {
-        val lista = mutableListOf<Map<String, String>>()
-        val c = readableDatabase.rawQuery(
-            """
-            SELECT id_turno, dia_semana, hora_inicio, hora_fin, duracion_min
-            FROM turno_profesional
-            WHERE profesional_rut = ?
-            ORDER BY dia_semana, hora_inicio
-            """.trimIndent(),
-            arrayOf(profesionalRut)
-        )
-        c.use { cursor ->
-            while (cursor.moveToNext()) {
-                val item = mapOf(
-                    "id_turno" to cursor.getInt(0).toString(),
-                    "dia_semana" to cursor.getInt(1).toString(),
-                    "hora_inicio" to cursor.getString(2),
-                    "hora_fin" to cursor.getString(3),
-                    "duracion_min" to cursor.getInt(4).toString()
-                )
-                lista.add(item)
-            }
-        }
-        return lista
-    }
-
-    // =========================
     // =         CITA          =
     // =========================
 
@@ -380,9 +393,9 @@ class BaseDatos(context: Context) :
         profesionalRut: String,
         clienteRut: String,
         idMascota: Int,
-        fecha: String,
-        horaInicio: String,
-        horaFin: String,
+        fecha: String,        // "YYYY-MM-DD"
+        horaInicio: String,   // "HH:MM"
+        horaFin: String,      // "HH:MM"
         estado: String = "pendiente",
         motivo: String? = null
     ): Long {
@@ -401,47 +414,106 @@ class BaseDatos(context: Context) :
 
     fun actualizarEstadoCita(idCita: Int, nuevoEstado: String): Int {
         val cv = ContentValues().apply { put("estado", nuevoEstado) }
-        return writableDatabase.update(
-            "cita", cv, "id_cita=?", arrayOf(idCita.toString())
-        )
-    }
-    fun validarProfesional(email: String, password: String): Boolean {
-        val c = readableDatabase.rawQuery(
-            "SELECT 1 FROM profesional WHERE email=? AND password=? LIMIT 1",
-            arrayOf(email, password)
-        )
-        c.use { return it.moveToFirst() }
+        return writableDatabase.update("cita", cv, "id_cita=?", arrayOf(idCita.toString()))
     }
 
-    /** Agenda de un profesional en una fecha (para tu pantalla "Agenda de hoy") */
-    fun getAgendaProfesionalPorFecha(profesionalRut: String, fecha: String): List<Map<String, String>> {
+    /** Citas del cliente (histórico) */
+    fun listarCitasDeCliente(clienteRut: String): List<Map<String, String>> {
         val lista = mutableListOf<Map<String, String>>()
-        val c = readableDatabase.rawQuery(
-            """
-            SELECT c.id_cita, c.hora_inicio, c.hora_fin, c.estado,
-                   m.nombre AS mascota, cl.nombres || ' ' || cl.apellidos AS cliente, c.motivo
+        val c = readableDatabase.rawQuery("""
+            SELECT c.id_cita, c.fecha, c.hora_inicio, c.hora_fin, c.estado,
+                   p.nombres || ' ' || p.apellidos as profesional, 
+                   m.nombre as mascota, c.motivo
             FROM cita c
+            JOIN profesional p ON p.rut = c.profesional_rut
             JOIN mascota m ON m.id_mascota = c.id_mascota
-            JOIN cliente cl ON cl.rut = c.cliente_rut
-            WHERE c.profesional_rut = ? AND c.fecha = ?
-            ORDER BY c.hora_inicio
-            """.trimIndent(),
-            arrayOf(profesionalRut, fecha)
-        )
-        c.use { cursor ->
-            while (cursor.moveToNext()) {
-                val item = mapOf(
-                    "id_cita" to cursor.getInt(0).toString(),
-                    "hora_inicio" to cursor.getString(1),
-                    "hora_fin" to cursor.getString(2),
-                    "estado" to cursor.getString(3),
-                    "mascota" to cursor.getString(4),
-                    "cliente" to cursor.getString(5),
-                    "motivo" to (cursor.getString(6) ?: "")
+            WHERE c.cliente_rut=?
+            ORDER BY c.fecha DESC, c.hora_inicio DESC
+        """.trimIndent(), arrayOf(clienteRut))
+        c.use { cur ->
+            while (cur.moveToNext()) {
+                lista.add(
+                    mapOf(
+                        "id_cita" to cur.getInt(0).toString(),
+                        "fecha" to cur.getString(1),
+                        "hora_inicio" to cur.getString(2),
+                        "hora_fin" to cur.getString(3),
+                        "estado" to cur.getString(4),
+                        "profesional" to cur.getString(5),
+                        "mascota" to cur.getString(6),
+                        "motivo" to (cur.getString(7) ?: "")
+                    )
                 )
-                lista.add(item)
             }
         }
         return lista
+    }
+
+    /** Horarios disponibles según turnos y citas existentes (excluye canceladas=liberan). */
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun getHorariosDisponibles(profesionalRut: String, fecha: String): List<String> {
+        // 1) Día de semana 0..6
+        val diaSemana = diaSemanaDeFecha(fecha)
+
+        // 2) Para cada turno del día, generamos bloques y restamos los ocupados
+        val ocupados = citasOcupadas(profesionalRut, fecha).toMutableSet()
+        val disponibles = mutableListOf<String>()
+
+        val c = readableDatabase.rawQuery("""
+            SELECT hora_inicio, hora_fin, duracion_min
+            FROM turno_profesional
+            WHERE profesional_rut=? AND dia_semana=?
+        """.trimIndent(), arrayOf(profesionalRut, diaSemana.toString()))
+
+        c.use { cur ->
+            while (cur.moveToNext()) {
+                val hIni = cur.getString(0)
+                val hFin = cur.getString(1)
+                val dur = cur.getInt(2)
+
+                var t = aMinutos(hIni)
+                val fin = aMinutos(hFin)
+                while (t + dur <= fin) {
+                    val slot = aHora(t)
+                    if (!ocupados.contains(slot)) {
+                        disponibles.add(slot)
+                    }
+                    t += dur
+                }
+            }
+        }
+        return disponibles.sorted()
+    }
+
+    private fun citasOcupadas(profesionalRut: String, fecha: String): Set<String> {
+        val set = mutableSetOf<String>()
+        val c = readableDatabase.rawQuery("""
+            SELECT hora_inicio
+            FROM cita
+            WHERE profesional_rut=? AND fecha=? AND estado IN ('pendiente','realizada','ausente')
+        """.trimIndent(), arrayOf(profesionalRut, fecha))
+        c.use { cur ->
+            while (cur.moveToNext()) set.add(cur.getString(0))
+        }
+        return set
+    }
+
+    private fun aMinutos(hhmm: String): Int {
+        val p = hhmm.split(":")
+        return p[0].toInt() * 60 + p[1].toInt()
+    }
+
+    private fun aHora(mins: Int): String {
+        val h = mins / 60
+        val m = mins % 60
+        return "%02d:%02d".format(h, m)
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun diaSemanaDeFecha(fecha: String): Int {
+        val ld = LocalDate.parse(fecha, DateTimeFormatter.ISO_LOCAL_DATE)
+        // Lunes=0 .. Domingo=6 (alineado con tus turnos)
+        val dow = ld.dayOfWeek.value // 1..7 (L..D)
+        return (dow - 1)
     }
 }
