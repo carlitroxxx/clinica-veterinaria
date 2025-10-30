@@ -7,7 +7,6 @@ object SesionManager {
     private const val PREF_NAME = "sesion_prefs"
     private const val KEY_EMAIL = "email"
     private const val KEY_TIPO = "tipo" // "admin" o "profesional"
-
     private fun prefs(context: Context): SharedPreferences =
         context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
 

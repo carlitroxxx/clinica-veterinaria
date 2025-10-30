@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import com.example.clinicaveterinaria.data.Repository
 import com.example.clinicaveterinaria.model.Cliente
 import com.example.clinicaveterinaria.util.RutUtils
 
@@ -23,12 +24,22 @@ import com.example.clinicaveterinaria.util.RutUtils
 @Composable
 fun CrearClienteRoute(
     nav: NavHostController,
-    onGuardarCliente: (Cliente) -> Unit = { /* no-op por ahora */ }
+    onGuardarCliente: (Cliente) -> Unit = { }
 ) {
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+
     CrearClienteScreen(
         onGuardar = { c ->
-            onGuardarCliente(c)
-            nav.popBackStack()
+            // Guardar en BD
+            val res = Repository.agregarCliente(c)
+            if (res.ok) {
+                com.example.clinicaveterinaria.data.SesionManager.iniciarSesion(ctx, c.email, "cliente")
+                nav.navigate("clienteAgregarMascota/${c.rut}") {
+                    popUpTo("login") { inclusive = true }
+                }
+            } else {
+                nav.currentBackStackEntry?.savedStateHandle?.set("crearClienteError", res.mensaje ?: "Error al guardar")
+            }
         },
         onCancelar = { nav.popBackStack() }
     )

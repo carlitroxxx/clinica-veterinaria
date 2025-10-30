@@ -7,6 +7,7 @@ import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import android.os.Build
 import androidx.annotation.RequiresApi
+import com.example.clinicaveterinaria.model.Cliente
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -68,9 +69,9 @@ class BaseDatos(context: Context) :
                 rut TEXT PRIMARY KEY,
                 nombres TEXT NOT NULL,
                 apellidos TEXT NOT NULL,
-                email TEXT NOT NULL,
+                email TEXT NOT NULL UNIQUE,
                 telefono TEXT NOT NULL,
-                password TEXT NOT NULL DEFAULT '1234'
+                contrasena TEXT NOT NULL
             );
         """.trimIndent())
 
@@ -240,106 +241,38 @@ class BaseDatos(context: Context) :
         c.use { return it.moveToFirst() }
     }
 
-    /** Agenda de un profesional en una fecha (YYYY-MM-DD) */
-    fun getAgendaProfesionalPorFecha(profesionalRut: String, fecha: String): List<Map<String, String>> {
-        val lista = mutableListOf<Map<String, String>>()
-        val c = readableDatabase.rawQuery(
-            """
-            SELECT c.id_cita, c.hora_inicio, c.hora_fin, c.estado,
-                   m.nombre AS mascota, cl.nombres || ' ' || cl.apellidos AS cliente, c.motivo
-            FROM cita c
-            JOIN mascota m ON m.id_mascota = c.id_mascota
-            JOIN cliente cl ON cl.rut = c.cliente_rut
-            WHERE c.profesional_rut = ? AND c.fecha = ?
-            ORDER BY c.hora_inicio
-            """.trimIndent(),
-            arrayOf(profesionalRut, fecha)
-        )
-        c.use { cursor ->
-            while (cursor.moveToNext()) {
-                val item = mapOf(
-                    "id_cita" to cursor.getInt(0).toString(),
-                    "hora_inicio" to cursor.getString(1),
-                    "hora_fin" to cursor.getString(2),
-                    "estado" to cursor.getString(3),
-                    "mascota" to cursor.getString(4),
-                    "cliente" to cursor.getString(5),
-                    "motivo" to (cursor.getString(6) ?: "")
-                )
-                lista.add(item)
-            }
-        }
-        return lista
+
+    fun existeClientePorRut(rut: String): Boolean {
+        readableDatabase.rawQuery(
+            "SELECT 1 FROM cliente WHERE rut = ? LIMIT 1",
+            arrayOf(rut)
+        ).use { c -> return c.moveToFirst() }
     }
 
-    // =========================
-    // =        CLIENTE        =
-    // =========================
+    fun existeClientePorEmail(email: String): Boolean {
+        readableDatabase.rawQuery(
+            "SELECT 1 FROM cliente WHERE LOWER(email) = LOWER(?) LIMIT 1",
+            arrayOf(email)
+        ).use { c -> return c.moveToFirst() }
+    }
 
-    fun insertarCliente(
-        rut: String,
-        nombres: String,
-        apellidos: String,
-        email: String,
-        telefono: String,
-        password: String = "1234"
-    ): Long {
+    fun insertCliente(c: Cliente): Long {
         val cv = ContentValues().apply {
-            put("rut", rut)
-            put("nombres", nombres)
-            put("apellidos", apellidos)
-            put("email", email)
-            put("telefono", telefono)
-            put("password", password)
+            put("rut", c.rut)
+            put("nombres", c.nombres)
+            put("apellidos", c.apellidos)
+            put("email", c.email)
+            put("telefono", c.telefono)
+            put("contrasena", c.contrasena)
         }
         return writableDatabase.insert("cliente", null, cv)
-    }
-
-    fun validarCliente(email: String, password: String): Boolean {
-        val c = readableDatabase.rawQuery(
-            "SELECT 1 FROM cliente WHERE email=? AND password=? LIMIT 1",
-            arrayOf(email, password)
-        )
-        c.use { return it.moveToFirst() }
-    }
-
-    fun listaCliente(): List<Map<String, String>> {
-        val lista = mutableListOf<Map<String, String>>()
-        val c = readableDatabase.rawQuery(
-            """
-            SELECT rut, nombres, apellidos, email, telefono
-            FROM cliente
-            ORDER BY apellidos, nombres
-            """.trimIndent(), null
-        )
-        c.use { cursor ->
-            while (cursor.moveToNext()) {
-                val item = mapOf(
-                    "rut" to cursor.getString(0),
-                    "nombres" to cursor.getString(1),
-                    "apellidos" to cursor.getString(2),
-                    "email" to cursor.getString(3),
-                    "telefono" to cursor.getString(4),
-                )
-                lista.add(item)
-            }
-        }
-        return lista
-    }
-
-    fun clienteTieneMascotas(clienteRut: String): Boolean {
-        val c = readableDatabase.rawQuery(
-            "SELECT 1 FROM mascota WHERE cliente_rut=? LIMIT 1",
-            arrayOf(clienteRut)
-        )
-        c.use { return it.moveToFirst() }
     }
 
     // =========================
     // =        MASCOTA        =
     // =========================
 
-    fun insertarMascota(
+    fun insertMascota(
         clienteRut: String,
         nombre: String,
         especie: String,

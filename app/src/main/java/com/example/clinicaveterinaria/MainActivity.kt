@@ -149,6 +149,22 @@ class MainActivity : ComponentActivity() {
                                 onCancelar = { navController.popBackStack() }
                             )
                         }
+                        composable(
+                            "clienteAgregarMascota/{rutCliente}",
+                            arguments = listOf(navArgument("rutCliente") { type = NavType.StringType })
+                        ) { backStackEntry ->
+                            val rutCliente = backStackEntry.arguments?.getString("rutCliente") ?: ""
+
+                            CrearMascotaRoute(
+                                nav = navController,
+                                clienteRut = rutCliente,
+                                onGuardarMascota = { form ->
+                                    // SOLO FRONT por ahora.
+                                    // Aquí luego guardarías en BD; de momento, puedes mostrar un snackbar o navegar:
+                                    // navController.popBackStack()
+                                }
+                            )
+                        }
 
                         composable(
                             "modificarProfesional/{rut}",
@@ -255,24 +271,24 @@ class MainActivity : ComponentActivity() {
                                 onBackClick = { navController.popBackStack() }
                             )
                         }
+                        // --- Cliente: crear cuenta ---
                         composable("crearCliente") {
-                            CrearClienteRoute(
+                            CrearClienteRoute(nav = navController)
+                        }
+                        composable(
+                            "clienteAgregarMascota/{rutCliente}",
+                            arguments = listOf(navArgument("rutCliente") { type = NavType.StringType })
+                        ) { backStackEntry ->
+                            val rutCliente = backStackEntry.arguments?.getString("rutCliente") ?: ""
+
+                            CrearMascotaRoute(
                                 nav = navController,
-                                onGuardarCliente = { cliente ->
-                                    // TODO: por ahora solo front. Aquí podrías:
-                                    // - Guardarlo en memoria temporal o mock
-                                    // - Iniciar sesión y redirigir (si quieres reproducir tu flujo)
-                                    //   SesionManager.iniciarSesion(context, cliente.email, "cliente")
-                                    //   navController.navigate("clienteProfesionales") {
-                                    //       popUpTo("login") { inclusive = true }
-                                    //   }
-                                    navController.popBackStack() // comportamiento simple por ahora
-                                }
+                                clienteRut = rutCliente
                             )
                         }
+
                         composable("clienteMisReservas") {
                             val reservas = remember {
-                                // ✅ Fijamos el tipo para evitar el error de inferencia
                                 mutableStateListOf<ReservaMock>().apply {
                                     addAll(
                                         listOf(

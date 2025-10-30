@@ -2,12 +2,12 @@ package com.example.clinicaveterinaria.data
 
 import android.content.Context
 import androidx.compose.runtime.mutableStateListOf
+import com.example.clinicaveterinaria.model.Cliente
 import com.example.clinicaveterinaria.model.Profesional
+import com.example.clinicaveterinaria.ui.cliente.MascotaForm
 
 object Repository {
     private lateinit var db: BaseDatos
-
-    // Lista observable que usa SIEMPRE el modelo de package 'model'
     private val _profesionales = mutableStateListOf<Profesional>()
     val profesionales: List<Profesional> get() = _profesionales
 
@@ -81,6 +81,38 @@ object Repository {
     fun eliminarProfesional(rut: String) {
         db.eliminarProfesional(rut)
         _profesionales.removeAll { it.rut == rut }
+    }
+
+
+    //clienteee
+
+    data class Resultado<out T>(val ok: Boolean, val data: T? = null, val mensaje: String? = null)
+
+    fun agregarCliente(c: Cliente): Resultado<Unit> {
+        // Duplicados simples por rut/email (igual que harías con profesional)
+        if (db.existeClientePorRut(c.rut)) {
+            return Resultado(false, mensaje = "Ya existe un cliente con ese RUT")
+        }
+        if (db.existeClientePorEmail(c.email)) {
+            return Resultado(false, mensaje = "Ya existe un cliente con ese correo")
+        }
+
+        val id = db.insertCliente(c)
+        return if (id != -1L) Resultado(true) else Resultado(false, mensaje = "No se pudo guardar")
+    }
+    fun agregarMascota(form: MascotaForm): Resultado<Long> {
+        if (form.clienteRut.isBlank() || form.nombre.isBlank() || form.especie.isBlank()) {
+            return Resultado(false, mensaje = "Faltan campos obligatorios")
+        }
+        val rowId = db.insertMascota(
+            clienteRut = form.clienteRut.trim(),
+            nombre = form.nombre.trim(),
+            especie = form.especie.trim(),
+            raza = form.raza?.trim().takeUnless { it.isNullOrEmpty() },
+            sexo = form.sexo?.trim().takeUnless { it.isNullOrEmpty() },
+            fechaNacimiento = form.fechaNacimiento?.trim().takeUnless { it.isNullOrEmpty() }
+        )
+        return if (rowId != -1L) Resultado(true, data = rowId) else Resultado(false, mensaje = "No se pudo guardar la mascota")
     }
 
     // Útil si alguna pantalla necesita llamar helpers directos de BD (insertar cita, etc.)
