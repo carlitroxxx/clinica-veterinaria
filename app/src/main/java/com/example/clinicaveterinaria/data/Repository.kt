@@ -29,13 +29,11 @@ object Repository {
     }
 
     private fun mapToProfesional(row: Map<String, String>): Profesional {
-        // rut, nombres, apellidos, genero, fecha_nacimiento, especialidad, email, telefono
         return Profesional(
             rut = row["rut"].orEmpty(),
             nombres = row["nombres"].orEmpty(),
             apellidos = row["apellidos"].orEmpty(),
             genero = row["genero"].orEmpty(),
-            // En la app usamos 'fechaNacimiento' (camelCase) pero en BD es 'fecha_nacimiento'
             fechaNacimiento = row["fecha_nacimiento"].orEmpty(),
             especialidad = row["especialidad"].orEmpty(),
             email = row["email"].orEmpty(),
@@ -84,7 +82,6 @@ object Repository {
     data class Resultado<out T>(val ok: Boolean, val data: T? = null, val mensaje: String? = null)
 
     fun agregarCliente(c: Cliente): Resultado<Unit> {
-        // Duplicados simples por rut/email
         if (db.existeClientePorRut(c.rut)) {
             return Resultado(false, mensaje = "Ya existe un cliente con ese RUT")
         }
@@ -113,7 +110,6 @@ object Repository {
         if (email.isBlank()) return null
         return db.getClientePorEmail(email)
     }
-    // Puedes dejar tu Resultado<T> que ya usas
 
 
     fun agregarReserva(
@@ -123,7 +119,6 @@ object Repository {
         hora: String,
         servicio: String
     ): Resultado<Long> {
-        // validaciones mínimas
         if (clienteRut.isBlank() || profesionalRut.isBlank() || fecha.isBlank() || hora.isBlank() || servicio.isBlank()) {
             return Resultado(false, mensaje = "Faltan campos obligatorios")
         }
@@ -168,13 +163,11 @@ object Repository {
     fun obtenerTurnosProfesional(rut: String): List<BaseDatos.TurnoDb> =
         db.getTurnosProfesional(rut)
 
-    // Utilidad: weekday 1..7 desde "YYYY-MM-DD"
     @RequiresApi(Build.VERSION_CODES.O)
     private fun diaSemanaDesdeFecha(fecha: String): Int {
         return java.time.LocalDate.parse(fecha).dayOfWeek.value // 1=Mon .. 7=Sun
     }
 
-    // Genera slots en "[hora_inicio, hora_fin)" cada duracion_min
     private fun generarSlots(hInicio: String, hFin: String, dur: Int): List<String> {
         fun toMin(hhmm: String): Int {
             val (h,m) = hhmm.split(":")
@@ -199,7 +192,7 @@ object Repository {
     @RequiresApi(Build.VERSION_CODES.O)
     fun horasDisponibles(profRut: String, fecha: String): List<String> {
         if (fecha.isBlank()) return emptyList()
-        val dow = diaSemanaDesdeFecha(fecha) // 1..7
+        val dow = diaSemanaDesdeFecha(fecha)
         val turnos = db.getTurnosProfesional(profRut).filter { it.diaSemana == dow }
         if (turnos.isEmpty()) return emptyList()
 
@@ -215,18 +208,15 @@ object Repository {
     // Para buscar al profesional por email (sesión)
     fun obtenerProfesionalPorEmail(email: String): com.example.clinicaveterinaria.model.Profesional? =
         try {
-            // Si ya tienes algo similar, usa el tuyo.
-            // Aquí recorremos la lista (o implementa un SELECT por email en tu BD si prefieres)
             obtenerProfesionales().firstOrNull { it.email.equals(email, ignoreCase = true) }
         } catch (_: Exception) { null }
 
-    // DTO para la UI de profesional (hoy)
     data class ReservaProfesional(
         val id: Long,
         val hora: String,
         val servicio: String,
-        val estado: String,           // "Pendiente" | "Realizada" | "Cancelada"
-        val clienteNombre: String,    // "Nombres Apellidos"
+        val estado: String,
+        val clienteNombre: String,
         val clienteRut: String
     )
 
@@ -239,7 +229,7 @@ object Repository {
                     id = r.id,
                     hora = r.hora,
                     servicio = r.servicio,
-                    estado = r.estado,           // ya viene como texto
+                    estado = r.estado,
                     clienteNombre = nom,
                     clienteRut = r.clienteRut
                 )
@@ -257,11 +247,8 @@ object Repository {
             return c.moveToFirst()
         }
     }
-    // En Repository.kt
-    // Repository.kt
     fun obtenerMascotaNombrePorReserva(reservaId: Long): String? {
         val rd = db.readableDatabase
-        // Busca la PRIMERA mascota del cliente dueño de la reserva
         val sql = """
         SELECT m.nombre
         FROM reserva r
@@ -276,5 +263,19 @@ object Repository {
         }
     }
 
+    fun actualizarEstadoReserva(idReserva: Long, estadoNuevo: String): Boolean {
+        val estadoDb = when (estadoNuevo.trim().lowercase()) {
+            "realizada" -> "Realizada"
+            "cancelada" -> "Cancelada"
+            else -> "Pendiente"
+        }
+        return try {
+            db.writableDatabase.execSQL(
+                "UPDATE reserva SET estado = ? WHERE id_reserva = ?",
+                arrayOf(estadoDb, idReserva)
+            )
+            true
+        } catch (_: Exception) { false }
+    }
 
 }

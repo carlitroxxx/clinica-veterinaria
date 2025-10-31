@@ -102,7 +102,7 @@ fun CrearClienteScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = colorPrincipal, // <-- Color
+                    containerColor = colorPrincipal,
                     titleContentColor = MaterialTheme.colorScheme.onPrimary,
                     navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
                 )

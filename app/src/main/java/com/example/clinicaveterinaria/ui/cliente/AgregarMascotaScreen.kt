@@ -80,13 +80,13 @@ fun AgregarMascotaScreen(
                             onFechaNacimientoChange(selectedDate.format(DateTimeFormatter.ISO_LOCAL_DATE))
                         }
                     },
-                    colors = ButtonDefaults.textButtonColors(contentColor = colorPrincipal) // <-- Color
+                    colors = ButtonDefaults.textButtonColors(contentColor = colorPrincipal)
                 ) { Text("OK") }
             },
             dismissButton = {
                 TextButton(
                     onClick = { showDatePicker = false },
-                    colors = ButtonDefaults.textButtonColors(contentColor = colorPrincipal) // <-- Color
+                    colors = ButtonDefaults.textButtonColors(contentColor = colorPrincipal)
                 ) { Text("Cancelar") }
             }
         ) {
@@ -110,7 +110,7 @@ fun AgregarMascotaScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = colorPrincipal, // <-- Color
+                    containerColor = colorPrincipal,
                     titleContentColor = MaterialTheme.colorScheme.onPrimary,
                     navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
                 )

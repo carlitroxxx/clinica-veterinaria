@@ -19,7 +19,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.clinicaveterinaria.R
 
-//data class
 data class Profesional (
     val rut: String,
     val nombres: String,
@@ -41,11 +40,10 @@ fun ProfesionalesScreen(
 
     Scaffold(
         topBar = {
-            //Barra de título
             TopAppBar(
                 title = { Text("Nuestros Profesionales") },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = colorPrincipal, // <-- Color aplicado
+                    containerColor = colorPrincipal,
                     titleContentColor = MaterialTheme.colorScheme.onPrimary
                 )
             )
@@ -60,7 +58,6 @@ fun ProfesionalesScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
 
-            //Logo de la clínica en la parte superior
             item {
                 Image(
                     painter = painterResource(id = R.drawable.logo),
@@ -76,7 +73,6 @@ fun ProfesionalesScreen(
                     EmptyProfesionalesState()
                 }
             } else {
-                // Lista de profesionales
                 items(profesionales) { profesional ->
                     val fotoId = when (profesional.genero) {
                         "Femenino" -> R.drawable.perfildoctora1

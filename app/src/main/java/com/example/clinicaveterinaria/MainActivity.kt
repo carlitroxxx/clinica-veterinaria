@@ -37,18 +37,12 @@ import com.example.clinicaveterinaria.ui.profesional.HomeProfesionalScreen
 import com.example.clinicaveterinaria.ui.profesional.PerfilProfesionalScreen as PerfilProfesionalDoctorScreen
 import com.example.clinicaveterinaria.ui.theme.ClinicaVeterinariaTheme
 
-// Cliente (UI)
-import com.example.clinicaveterinaria.ui.cliente.ClienteMockData
-import com.example.clinicaveterinaria.ui.cliente.ProfesionalesScreen
-import com.example.clinicaveterinaria.ui.cliente.PerfilProfesionalScreen as PerfilProfesionalClienteScreen
 import com.example.clinicaveterinaria.ui.cliente.MisReservasScreen
 import com.example.clinicaveterinaria.ui.cliente.ReservaMock
 import com.example.clinicaveterinaria.ui.cliente.AgendarScreen
 import com.example.clinicaveterinaria.ui.cliente.CrearClienteRoute
 import com.example.clinicaveterinaria.ui.cliente.CrearMascotaRoute
 
-// Perfil cliente (lee sesión + BD)
-import com.example.clinicaveterinaria.ui.screens.paciente.PerfilClienteScreen
 
 class MainActivity : ComponentActivity() {
 
@@ -65,7 +59,6 @@ class MainActivity : ComponentActivity() {
                 val currentRoute = backStack?.destination?.route
                 val context = LocalContext.current
 
-                // Estado de sesión reactivo
                 var sesionActiva by remember { mutableStateOf(SesionManager.haySesionActiva(context)) }
                 var tipoSesion by remember { mutableStateOf(SesionManager.obtenerTipo(context)) }
 
@@ -203,27 +196,19 @@ class MainActivity : ComponentActivity() {
                         composable("perfilProfesional") { PerfilProfesionalDoctorScreen(navController) }
 
                         // ---------- CLIENTE ----------
-                        // Lista de profesionales (si prefieres BD, reemplaza por Repository.obtenerProfesionales())
-                        // en MainActivity.kt, dentro del NavHost { ... }
-                        // en MainActivity.kt, dentro del NavHost { ... }
+
                         composable("clienteProfesionales") {
-                            // 1) Estado UI
                             var uiProfesionales by remember { mutableStateOf<List<com.example.clinicaveterinaria.ui.cliente.Profesional>>(emptyList()) }
 
-                            // 2) Cargar desde BD una sola vez
                             LaunchedEffect(Unit) {
-                                // Ojo: este Profesional de abajo es el de tu capa de datos/modelo,
-                                // puede estar en package com.example.clinicaveterinaria.model o .data
                                 val desdeDb: List<com.example.clinicaveterinaria.model.Profesional> =
                                     try { Repository.obtenerProfesionales() } catch (_: Exception) { emptyList() }
 
-                                // 3) Mapear al data class que espera tu ProfesionalesScreen (ui.cliente.Profesional)
                                 uiProfesionales = desdeDb.map { p ->
                                     com.example.clinicaveterinaria.ui.cliente.Profesional(
                                         rut = p.rut,
                                         nombres = p.nombres,
                                         apellidos = p.apellidos,
-                                        // Normaliza género para elegir bien el drawable en tu screen
                                         genero = when (p.genero.trim().lowercase()) {
                                             "f", "femenino" -> "Femenino"
                                             "m", "masculino" -> "Masculino"
@@ -237,11 +222,9 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
 
-                            // 4) Render: si la lista viene vacía, igual se ve el logo (tu screen ya lo muestra)
                             com.example.clinicaveterinaria.ui.cliente.ProfesionalesScreen(
                                 profesionales = uiProfesionales,
                                 onProfesionalClick = { rut ->
-                                    // Por si el rut lleva puntos/guiones
                                     val rutSeg = android.net.Uri.encode(rut)
                                     navController.navigate("clientePerfilProfesional/$rutSeg")
                                 }
@@ -250,7 +233,6 @@ class MainActivity : ComponentActivity() {
 
 
 
-                        // Perfil del profesional (vista cliente)
                         composable(
                             "clientePerfilProfesional/{rut}",
                             arguments = listOf(navArgument("rut") { type = NavType.StringType })
@@ -258,7 +240,6 @@ class MainActivity : ComponentActivity() {
                             val rutProfesional = backStackEntry.arguments?.getString("rut") ?: ""
                             val ctx = LocalContext.current
 
-                            // Obtén el rut del cliente desde la sesión
                             val emailSesion = SesionManager.obtenerEmail(ctx)
                             val rutCliente = remember(emailSesion) {
                                 emailSesion?.let { Repository.obtenerClientePorEmail(it)?.rut }.orEmpty()
@@ -276,7 +257,6 @@ class MainActivity : ComponentActivity() {
                                 fotoResId = R.drawable.logo,
                                 onAgendarClick = {
                                     if (rutCliente.isBlank()) {
-                                        // sesión inconsistente → manda a login por seguridad
                                         navController.navigate("login") {
                                             popUpTo("login") { inclusive = true }
                                         }
@@ -293,7 +273,6 @@ class MainActivity : ComponentActivity() {
 
 
 
-                        // Agendar (mínimo funcional; guarda en BD)
                         composable(
                             "clienteAgendar/{rut}",
                             arguments = listOf(navArgument("rut") { type = NavType.StringType })
@@ -301,15 +280,12 @@ class MainActivity : ComponentActivity() {
                             val rutProfesional = backStackEntry.arguments?.getString("rut") ?: ""
                             val ctx = LocalContext.current
 
-                            // Datos cliente desde sesión
                             val emailSesion = SesionManager.obtenerEmail(ctx)
                             val clienteRut = remember(emailSesion) { emailSesion?.let { Repository.obtenerClientePorEmail(it)?.rut } }
 
-                            // Datos profesional (con fallback para evitar drawables faltantes)
                             val prof = remember(rutProfesional) { Repository.obtenerProfesional(rutProfesional) }
                             val nombreProf = prof?.let { "${it.nombres} ${it.apellidos}" } ?: "Profesional"
                             val especialidad = prof?.especialidad ?: ""
-                            // 👇 Usa un drawable que EXISTE seguro (logo). Si luego agregas imágenes de perfil, cámbialo.
                             val fotoResId = R.drawable.logo
 
                             var fecha by rememberSaveable { mutableStateOf("") }
@@ -318,14 +294,12 @@ class MainActivity : ComponentActivity() {
                             var ok by remember { mutableStateOf<String?>(null) }
                             var error by remember { mutableStateOf<String?>(null) }
 
-                            // Horarios libres desde repo, con try/catch para que NUNCA crashee
                             var horarios by remember { mutableStateOf<List<String>>(emptyList()) }
                             LaunchedEffect(fecha, rutProfesional) {
                                 horarios = try {
                                     if (fecha.isBlank()) emptyList()
                                     else Repository.horasDisponibles(rutProfesional, fecha)
                                 } catch (e: Exception) {
-                                    // Si algo falla (ej. parse de fecha), no crasheamos
                                     emptyList()
                                 }
                                 if (hora.isNotBlank() && hora !in horarios) hora = ""
@@ -365,7 +339,6 @@ class MainActivity : ComponentActivity() {
 
 
 
-                        // Mis Reservas (usa tu MisReservasScreen)
                         composable("clienteMisReservas") {
                             val ctx = LocalContext.current
                             val emailSesion = SesionManager.obtenerEmail(ctx)
@@ -407,7 +380,6 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
-                        // Perfil de cliente (lee sesión + BD)
                         composable("clientePerfil") {
                             val ctx = LocalContext.current
                             val emailSesion = SesionManager.obtenerEmail(ctx)
@@ -429,7 +401,6 @@ class MainActivity : ComponentActivity() {
                                     }
                                 )
                             } else {
-                                // Fallback simple si no hay sesión o no se encontró el cliente
                                 Column(
                                     modifier = Modifier
                                         .fillMaxSize()
@@ -450,7 +421,6 @@ class MainActivity : ComponentActivity() {
                         }
 
 
-                        // Agregar mascota (recibe rutCliente)
                         composable(
                             "clienteAgregarMascota/{rutCliente}",
                             arguments = listOf(navArgument("rutCliente") { type = NavType.StringType })

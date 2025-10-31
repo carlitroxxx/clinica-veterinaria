@@ -171,7 +171,7 @@ fun PerfilClienteScreen(
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-            HorizontalDivider() // Separador
+            HorizontalDivider()
             Spacer(modifier = Modifier.height(16.dp))
 
             OutlinedButton(

@@ -47,14 +47,9 @@ fun CrearMascotaRoute(
         onGuardar = { form ->
             val res = Repository.agregarMascota(form)
             if (res.ok) {
-                //flujo simple: volver al home del cliente (o a Mis Reservas si prefieres)
                 nav.navigate("clienteProfesionales") {
                     popUpTo("clienteProfesionales") { inclusive = true }
                 }
-            } else {
-                // alternativa minimalista: quedarte aquí y (si quieres) mostrar un error con Snackbar externo
-                // por simplicidad, solo volvemos:
-                // nav.popBackStack()
             }
         },
         onCancelar = { nav.popBackStack() }
@@ -96,7 +91,6 @@ fun CrearMascotaScreen(
         unfocusedBorderColor = colorPrincipal,
         focusedBorderColor = colorPrincipal,
         focusedLabelColor = colorPrincipal,
-        // Colores para el campo deshabilitado (RUT Cliente)
         disabledContainerColor = Color(0xFFEEEEEE),
         disabledBorderColor = Color.Gray,
         disabledLabelColor = Color.Gray
@@ -144,7 +138,6 @@ fun CrearMascotaScreen(
                 )
             }
 
-            // RUT del cliente (solo lectura)
             item {
                 OutlinedTextField(
                     value = rut,
@@ -157,7 +150,6 @@ fun CrearMascotaScreen(
                 )
             }
 
-            // Nombre
             item {
                 OutlinedTextField(
                     value = nombre,
@@ -259,7 +251,6 @@ fun CrearMascotaScreen(
                 }
             }
 
-            // Fecha de nacimiento (opcional, formato AAAA-MM-DD)
             item {
                 OutlinedTextField(
                     value = fechaNac,

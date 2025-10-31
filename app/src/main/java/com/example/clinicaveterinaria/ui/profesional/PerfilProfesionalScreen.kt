@@ -31,7 +31,6 @@ import com.example.clinicaveterinaria.data.Repository
 import com.example.clinicaveterinaria.data.SesionManager
 import com.example.clinicaveterinaria.model.Profesional
 
-//UI DATA
 data class PerfilUi(
     val nombres: String,
     val apellidos: String,
@@ -42,7 +41,6 @@ data class PerfilUi(
 )
 
 
-//  PERFIL PROFESIONAL
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -87,13 +85,11 @@ fun PerfilProfesionalScreen(nav: NavHostController) {
     val colorPrincipal = Color(0xFF00AAB0)
     val colorFondoCampo = Color(0xFFF7FCFC)
     val fieldColors = OutlinedTextFieldDefaults.colors(
-        // Estado normal (editable)
         unfocusedContainerColor = colorFondoCampo,
         unfocusedBorderColor = colorPrincipal,
         focusedBorderColor = colorPrincipal,
         focusedLabelColor = colorPrincipal,
 
-        // Estado ReadOnly (cuando !editando)
         disabledContainerColor = colorFondoCampo,
         disabledBorderColor = colorPrincipal.copy(alpha = 0.75f),
         disabledLabelColor = colorPrincipal.copy(alpha = 0.75f),
@@ -166,14 +162,12 @@ fun PerfilProfesionalScreen(nav: NavHostController) {
 
             Spacer(Modifier.height(16.dp))
 
-            // Card de información
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = colorFondoCampo)
             ) {
                 Column(Modifier.padding(16.dp)) {
-                    // Nombres y Apellidos separados
                     CampoPerfil(
                         label = "Nombres",
                         value = nombres,
@@ -257,7 +251,6 @@ fun PerfilProfesionalScreen(nav: NavHostController) {
 
             Spacer(Modifier.height(16.dp))
 
-            // Botones de acción
             if (editando) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -303,7 +296,6 @@ fun PerfilProfesionalScreen(nav: NavHostController) {
                         enabled = passValid,
                         shape = RoundedCornerShape(12.dp),
                         modifier = Modifier.weight(1f),
-                        // --- CAMBIO: Colores ---
                         colors = ButtonDefaults.buttonColors(containerColor = colorPrincipal)
                     ) { Text("Guardar") }
                 }

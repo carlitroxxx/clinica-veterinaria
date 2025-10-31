@@ -112,7 +112,7 @@ private fun AdminProfesionalCard(
     val fotoId = when (profesional.genero) {
         "Femenino" -> R.drawable.perfildoctora1
         "Masculino" -> R.drawable.perfildoctor1
-        else -> R.drawable.logo // Foto 'default'
+        else -> R.drawable.logo
     }
 
     Card(
@@ -148,7 +148,7 @@ private fun AdminProfesionalCard(
                 Text(
                     profesional.especialidad,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = colorPrincipal // Color del tema
+                    color = colorPrincipal
                 )
                 Text(
                     profesional.rut,

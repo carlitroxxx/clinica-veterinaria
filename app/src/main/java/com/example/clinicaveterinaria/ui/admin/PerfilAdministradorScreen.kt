@@ -50,7 +50,6 @@ fun PerfilAdministradorScreen(nav: NavHostController) {
                     titleContentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 actions = {
-                    // Botón de logout en la TopAppBar
                     IconButton(onClick = {
                         SesionManager.cerrarSesion(context)
                         nav.navigate("login") {
@@ -76,7 +75,6 @@ fun PerfilAdministradorScreen(nav: NavHostController) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
-            //Avatar + título
             Image(
                 painter = painterResource(id = R.drawable.logo),
                 contentDescription = "Logo empresa",
@@ -88,7 +86,6 @@ fun PerfilAdministradorScreen(nav: NavHostController) {
             )
             Text("Administrador", fontSize = 22.sp, color = colorPrincipal, fontWeight = FontWeight.SemiBold)
 
-            //Chip de rol
             AssistChip(
                 onClick = { },
                 label = { Text("Rol: Admin") },
@@ -99,7 +96,6 @@ fun PerfilAdministradorScreen(nav: NavHostController) {
                 border = BorderStroke(1.dp, colorPrincipal)
             )
 
-            //Email
             OutlinedTextField(
                 value = email,
                 onValueChange = {},
@@ -130,7 +126,7 @@ fun PerfilAdministradorScreen(nav: NavHostController) {
                         Text(
                             "Cantidad de Profesionales",
                             style = MaterialTheme.typography.labelMedium,
-                            color = colorTextoCard // <-- Color
+                            color = colorTextoCard
                         )
                         Text(
                             totalProfesionales.toString(),

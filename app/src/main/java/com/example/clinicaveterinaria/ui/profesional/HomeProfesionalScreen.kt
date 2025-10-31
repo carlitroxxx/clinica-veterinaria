@@ -34,7 +34,6 @@ data class ReservaUi(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeProfesionalScreen() {
-    // --- (Lógica de estado se queda igual) ---
     var mostrarDialogRegistrar by remember { mutableStateOf(false) }
     var mostrarDialogDetalle by remember { mutableStateOf(false) }
     val ctx = androidx.compose.ui.platform.LocalContext.current
@@ -66,7 +65,7 @@ fun HomeProfesionalScreen() {
                     hora = r.hora,
                     paciente = r.clienteNombre,
                     servicio = r.servicio,
-                    mascota = mascotaNombre,       // 👈 ahora sí cargamos la mascota
+                    mascota = mascotaNombre,
                     estado = estadoEnum
                 )
             }
@@ -85,7 +84,6 @@ fun HomeProfesionalScreen() {
         else reservasUi.filter { it.estado.name == filtroSeleccionado }
     }
 
-    // Variables para los diálogos
     var reservaSel by remember { mutableStateOf<ReservaUi?>(null) }
     val pacienteSel = reservaSel?.paciente ?: "—"
     val horaSel = reservaSel?.hora ?: "—"
@@ -118,7 +116,7 @@ fun HomeProfesionalScreen() {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding), // <-- Padding aplicado
+                .padding(innerPadding),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             ExposedDropdownMenuBox(
@@ -248,18 +246,20 @@ fun HomeProfesionalScreen() {
                                     border = ButtonDefaults.outlinedButtonBorder.copy(brush = SolidColor(colorPrincipal))
                                 ) { Text("Detalle", maxLines = 1, softWrap = false) }
 
-                                Button(
-                                    onClick = {
-                                        reservaSel = r
-                                        mostrarDialogRegistrar = true
-                                       } ,
-                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
-                                    shape = RoundedCornerShape(8.dp),
-                                    modifier = Modifier.weight(1f),
-
-                                    colors = ButtonDefaults.buttonColors(containerColor = colorPrincipal)
-                                ) { Text("Registrar", maxLines = 1, softWrap = false) }
+                                if (r.estado == EstadoAtencion.PENDIENTE) {
+                                    Button(
+                                        onClick = {
+                                            reservaSel = r
+                                            mostrarDialogRegistrar = true
+                                        },
+                                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                                        shape = RoundedCornerShape(8.dp),
+                                        modifier = Modifier.weight(1f),
+                                        colors = ButtonDefaults.buttonColors(containerColor = colorPrincipal)
+                                    ) { Text("Registrar", maxLines = 1, softWrap = false) }
+                                }
                             }
+
                         }
                     }
                 }
@@ -274,15 +274,28 @@ fun HomeProfesionalScreen() {
             subtitulo = "${reservaSel!!.paciente} • ${reservaSel!!.servicio} — ${reservaSel!!.hora}",
             onDismiss = { mostrarDialogRegistrar = false },
             onGuardar = { form ->
+                val ok = Repository.actualizarEstadoReserva(reservaSel!!.id, form.estado)
+
+                if (ok) {
+                    val nuevoEstado = when (form.estado.trim().lowercase()) {
+                        "realizada" -> EstadoAtencion.REALIZADA
+                        "cancelada" -> EstadoAtencion.CANCELADA
+                        else -> EstadoAtencion.PENDIENTE
+                    }
+                    reservasUi = reservasUi.map { r ->
+                        if (r.id == reservaSel!!.id) r.copy(estado = nuevoEstado) else r
+                    }
+                }
                 mostrarDialogRegistrar = false
             }
         )
     }
 
+
     if (mostrarDialogDetalle && reservaSel != null) {
         DetalleReservaDialog(
             paciente = reservaSel!!.paciente,
-            mascota = reservaSel!!.mascota,   // 👈 nuevo
+            mascota = reservaSel!!.mascota,
             hora = reservaSel!!.hora,
             servicio = reservaSel!!.servicio,
             onCerrar = { mostrarDialogDetalle = false }
@@ -307,7 +320,7 @@ private fun DetalleReservaDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text("Cliente: $paciente")
-                Text("Mascota: $mascota")   // 👈 ahora se muestra
+                Text("Mascota: $mascota")
                 Text("Hora: $hora")
                 Text("Servicio: $servicio")
             }

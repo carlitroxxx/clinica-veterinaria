@@ -34,9 +34,9 @@ import java.util.Calendar
 import java.util.Locale
 
 data class DiaCalendario(
-    val fechaIso: String,        // "yyyy-MM-dd"
-    val nombreDiaSemana: String, // "Lun", "Mar", ...
-    val numeroDia: String        // "1", "2", ...
+    val fechaIso: String,
+    val nombreDiaSemana: String,
+    val numeroDia: String
 )
 
 private fun generarProximos7Dias(): List<DiaCalendario> {
@@ -168,14 +168,14 @@ fun AgendarScreen(
                 label = { Text("Servicio o motivo de la consulta") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
-                colors = fieldColors // <-- Color aplicado
+                colors = fieldColors
             )
 
             Button(
                 onClick = onConfirmarClick,
                 modifier = Modifier.fillMaxWidth(),
                 enabled = fecha.isNotBlank() && hora.isNotBlank() && servicio.isNotBlank(),
-                colors = ButtonDefaults.buttonColors(containerColor = colorPrincipal) // <-- Color
+                colors = ButtonDefaults.buttonColors(containerColor = colorPrincipal)
             ) {
                 Text("Confirmar Reserva")
             }

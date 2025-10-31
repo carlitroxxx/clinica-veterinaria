@@ -28,7 +28,7 @@ class BaseDatos(context: Context) :
         horaFin: String = "16:00"
     ) {
         val db = writableDatabase
-        for (dia in 1..5) { // L-V
+        for (dia in 1..5) {
             val cv = ContentValues().apply {
                 put("profesional_rut", profesionalRut)
                 put("dia_semana", dia)
@@ -421,8 +421,8 @@ class BaseDatos(context: Context) :
     // ---------- TURNOS ----------
     data class TurnoDb(
         val diaSemana: Int,
-        val horaInicio: String,  // "HH:MM"
-        val horaFin: String,     // "HH:MM"
+        val horaInicio: String,
+        val horaFin: String,
         val duracionMin: Int
     )
 
@@ -446,7 +446,7 @@ class BaseDatos(context: Context) :
         return out
     }
 
-    // Reservas existentes de un profesional en una fecha (para excluir horas ya tomadas)
+
     fun getHorasReservadas(profRut: String, fecha: String): Set<String> {
         val out = mutableSetOf<String>()
         readableDatabase.rawQuery(
@@ -467,7 +467,6 @@ class BaseDatos(context: Context) :
         val estado: String
     )
 
-    // Reservas de un profesional en una fecha (YYYY-MM-DD)
     fun getReservasDeProfesionalEn(profRut: String, fecha: String): List<ReservaDbPro> {
         val out = mutableListOf<ReservaDbPro>()
         readableDatabase.rawQuery(
@@ -495,7 +494,6 @@ class BaseDatos(context: Context) :
         return out
     }
 
-    // Para mostrar el nombre del paciente/cliente
     fun getClienteNombrePorRut(rut: String): Pair<String, String>? {
         readableDatabase.rawQuery(
             "SELECT nombres, apellidos FROM cliente WHERE rut = ? LIMIT 1",

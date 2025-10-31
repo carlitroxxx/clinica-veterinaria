@@ -84,7 +84,6 @@ fun RegistrarAtencionFormDialog(
         focusedLabelColor = colorPrincipal
     )
 
-    // Colores para los Chips
     val realizadaChipColors = FilterChipDefaults.filterChipColors(
         selectedContainerColor = colorPrincipal,
         selectedLabelColor = MaterialTheme.colorScheme.onPrimary
@@ -135,7 +134,6 @@ fun RegistrarAtencionFormDialog(
                         Spacer(Modifier.height(8.dp))
                     }
 
-                    // ESTADO
                     Text("Estado", style = MaterialTheme.typography.labelLarge)
                     Spacer(Modifier.height(4.dp))
                     Row(

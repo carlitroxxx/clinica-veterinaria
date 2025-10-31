@@ -36,7 +36,6 @@ fun LoginScreen(nav: NavHostController, context: android.content.Context) {
         verticalArrangement = Arrangement.Center
     ) {
 
-        //LOGO
         Image(
             painter = painterResource(id = R.drawable.logo),
             contentDescription = "Logo",
@@ -93,7 +92,6 @@ fun LoginScreen(nav: NavHostController, context: android.content.Context) {
                 val passTrim = contrasena.trim()
                 mensaje = null
 
-                // 1) Cliente (BD)
                 val cliente = Repository.obtenerClientePorEmail(emailTrim)
                 if (cliente != null && cliente.contrasena == passTrim) {
                     SesionManager.iniciarSesion(context, cliente.email, "cliente")
@@ -103,7 +101,6 @@ fun LoginScreen(nav: NavHostController, context: android.content.Context) {
                     return@Button
                 }
 
-                // 2) Admin fijo (si lo quieres mantener)
                 if (emailTrim == "admin@correo.cl" && passTrim == "1234") {
                     SesionManager.iniciarSesion(context, emailTrim, "admin")
                     nav.navigate("adminHome") {
@@ -112,7 +109,6 @@ fun LoginScreen(nav: NavHostController, context: android.content.Context) {
                     return@Button
                 }
 
-                // 3) Profesional (lista en memoria / BD como ya lo tenías)
                 if (Repository.profesionales.any { it.email == emailTrim && it.password == passTrim }) {
                     SesionManager.iniciarSesion(context, emailTrim, "profesional")
                     nav.navigate("profesionalHome") {
@@ -121,7 +117,6 @@ fun LoginScreen(nav: NavHostController, context: android.content.Context) {
                     return@Button
                 }
 
-                // Si nada calza:
                 mensaje = "Credenciales inválidas ❌"
             },
             modifier = Modifier
@@ -154,7 +149,6 @@ fun LoginScreen(nav: NavHostController, context: android.content.Context) {
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        //MENSAJE DE VALIDACIÓN
         mensaje?.let {
             Text(
                 text = it,

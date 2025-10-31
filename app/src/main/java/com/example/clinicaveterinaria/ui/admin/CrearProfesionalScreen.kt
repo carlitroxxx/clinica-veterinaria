@@ -58,11 +58,11 @@ fun CrearProfesionalScreen(
     var nombres by rememberSaveable { mutableStateOf("") }
     var apellidos by rememberSaveable { mutableStateOf("") }
     var genero by rememberSaveable { mutableStateOf("") }
-    var fechaNac by rememberSaveable { mutableStateOf("") } // AAAA-MM-DD
+    var fechaNac by rememberSaveable { mutableStateOf("") }
     var especialidad by rememberSaveable { mutableStateOf("") }
     var email by rememberSaveable { mutableStateOf("") }
     var telefono by rememberSaveable { mutableStateOf("") }
-    var password by rememberSaveable { mutableStateOf("") } //
+    var password by rememberSaveable { mutableStateOf("") }
 
     val rutOk = RutUtils.rutEsValido(rut)
     val nombresOk = nombres.trim().isNotEmpty()
@@ -106,7 +106,7 @@ fun CrearProfesionalScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = colorPrincipal, // <-- Color principal
+                    containerColor = colorPrincipal,
                     titleContentColor = MaterialTheme.colorScheme.onPrimary,
                     navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
                 )

@@ -84,7 +84,6 @@ fun PerfilProfesionalScreen(
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
 
-            //Sección de Foto y Nombre
             Image(
                 painter = painterResource(id = fotoResId),
                 contentDescription = "Foto de $nombre",
@@ -113,7 +112,6 @@ fun PerfilProfesionalScreen(
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-            //Sección "Servicios"
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.Start
