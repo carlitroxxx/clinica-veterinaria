@@ -113,23 +113,6 @@ fun PerfilProfesionalScreen(
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-            //Sección "Sobre mí" (Biografía)
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.Start
-            ) {
-                Text(
-                    text = "Sobre mí",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = bio,
-                    style = MaterialTheme.typography.bodyLarge
-                )
-            }
-
             //Sección "Servicios"
             Column(
                 modifier = Modifier.fillMaxWidth(),
