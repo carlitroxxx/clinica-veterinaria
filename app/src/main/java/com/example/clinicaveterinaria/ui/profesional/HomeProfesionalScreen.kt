@@ -59,15 +59,19 @@ fun HomeProfesionalScreen() {
                     "cancelada" -> EstadoAtencion.CANCELADA
                     else -> EstadoAtencion.PENDIENTE
                 }
+                val mascotaNombre = Repository.obtenerMascotaNombrePorReserva(r.id) ?: "—"
+
                 ReservaUi(
                     id = r.id,
                     hora = r.hora,
                     paciente = r.clienteNombre,
                     servicio = r.servicio,
+                    mascota = mascotaNombre,       // 👈 ahora sí cargamos la mascota
                     estado = estadoEnum
                 )
             }
         } else emptyList()
+
         cargando = false
     }
 
@@ -82,7 +86,7 @@ fun HomeProfesionalScreen() {
     }
 
     // Variables para los diálogos
-    val reservaSel = reservasFiltradas.firstOrNull()
+    var reservaSel by remember { mutableStateOf<ReservaUi?>(null) }
     val pacienteSel = reservaSel?.paciente ?: "—"
     val horaSel = reservaSel?.hora ?: "—"
     val servicioSel = reservaSel?.servicio ?: "—"
@@ -233,7 +237,10 @@ fun HomeProfesionalScreen() {
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 OutlinedButton(
-                                    onClick = { mostrarDialogDetalle = true },
+                                    onClick = {
+                                        reservaSel = r
+                                        mostrarDialogDetalle = true
+                                    },
                                     contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
                                     modifier = Modifier.weight(1f),
                                     shape = RoundedCornerShape(8.dp),
@@ -242,7 +249,10 @@ fun HomeProfesionalScreen() {
                                 ) { Text("Detalle", maxLines = 1, softWrap = false) }
 
                                 Button(
-                                    onClick = { mostrarDialogRegistrar = true },
+                                    onClick = {
+                                        reservaSel = r
+                                        mostrarDialogRegistrar = true
+                                       } ,
                                     contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
                                     shape = RoundedCornerShape(8.dp),
                                     modifier = Modifier.weight(1f),
@@ -261,7 +271,7 @@ fun HomeProfesionalScreen() {
     if (mostrarDialogRegistrar && reservaSel != null) {
         RegistrarAtencionFormDialog(
             titulo = "Registrar atención",
-            subtitulo = "${reservaSel.paciente} • ${reservaSel.servicio} — ${reservaSel.hora}",
+            subtitulo = "${reservaSel!!.paciente} • ${reservaSel!!.servicio} — ${reservaSel!!.hora}",
             onDismiss = { mostrarDialogRegistrar = false },
             onGuardar = { form ->
                 mostrarDialogRegistrar = false
@@ -271,18 +281,20 @@ fun HomeProfesionalScreen() {
 
     if (mostrarDialogDetalle && reservaSel != null) {
         DetalleReservaDialog(
-            paciente = reservaSel.paciente,
-            hora = reservaSel.hora,
-            servicio = reservaSel.servicio,
+            paciente = reservaSel!!.paciente,
+            mascota = reservaSel!!.mascota,   // 👈 nuevo
+            hora = reservaSel!!.hora,
+            servicio = reservaSel!!.servicio,
             onCerrar = { mostrarDialogDetalle = false }
         )
     }
-}
 
+}
 
 @Composable
 private fun DetalleReservaDialog(
     paciente: String,
+    mascota: String,
     hora: String,
     servicio: String,
     onCerrar: () -> Unit
@@ -295,7 +307,7 @@ private fun DetalleReservaDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text("Cliente: $paciente")
-                Text("Mascota: ")
+                Text("Mascota: $mascota")   // 👈 ahora se muestra
                 Text("Hora: $hora")
                 Text("Servicio: $servicio")
             }

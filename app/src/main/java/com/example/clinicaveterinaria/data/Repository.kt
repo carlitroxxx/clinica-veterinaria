@@ -257,5 +257,24 @@ object Repository {
             return c.moveToFirst()
         }
     }
+    // En Repository.kt
+    // Repository.kt
+    fun obtenerMascotaNombrePorReserva(reservaId: Long): String? {
+        val rd = db.readableDatabase
+        // Busca la PRIMERA mascota del cliente dueño de la reserva
+        val sql = """
+        SELECT m.nombre
+        FROM reserva r
+        JOIN mascota m ON m.cliente_rut = r.cliente_rut
+        WHERE r.id_reserva = ?
+        ORDER BY m.id_mascota ASC
+        LIMIT 1
+    """.trimIndent()
+
+        rd.rawQuery(sql, arrayOf(reservaId.toString())).use { c ->
+            return if (c.moveToFirst()) c.getString(0) else null
+        }
+    }
+
 
 }
