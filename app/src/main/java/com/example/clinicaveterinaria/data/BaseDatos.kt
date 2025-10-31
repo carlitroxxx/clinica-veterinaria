@@ -28,7 +28,7 @@ class BaseDatos(context: Context) :
         horaFin: String = "16:00"
     ) {
         val db = writableDatabase
-        for (dia in 0..4) { // L-V
+        for (dia in 1..5) { // L-V
             val cv = ContentValues().apply {
                 put("profesional_rut", profesionalRut)
                 put("dia_semana", dia)

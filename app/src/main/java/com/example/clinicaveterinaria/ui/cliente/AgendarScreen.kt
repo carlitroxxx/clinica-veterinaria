@@ -273,27 +273,53 @@ private fun CalendarioHorizontal(
 private fun GrillaDeHoras(
     horarios: List<String>,
     horaSeleccionada: String,
-    onHoraClick: (String) -> Unit
+    onHoraClick: (String) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val colorPrincipal = Color(0xFF00AAB0)
 
+    // Estado vacío
+    if (horarios.isEmpty()) {
+        Box(
+            modifier = modifier
+                .fillMaxWidth()
+                .height(200.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "No hay horas disponibles este día",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+        }
+        return
+    }
+
+    // Grid de horas
     LazyVerticalGrid(
         columns = GridCells.Adaptive(minSize = 90.dp),
-        modifier = Modifier.height(200.dp),
+        modifier = modifier.height(200.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        items(horarios) { hora ->
+        items(horarios, key = { it }) { hora ->
             val isSelected = hora == horaSeleccionada
             val colors = if (isSelected) {
-                ButtonDefaults.buttonColors(containerColor = colorPrincipal, contentColor = MaterialTheme.colorScheme.onPrimary)
+                ButtonDefaults.buttonColors(
+                    containerColor = colorPrincipal,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                )
             } else {
                 ButtonDefaults.outlinedButtonColors(contentColor = colorPrincipal)
             }
+
             Button(
                 onClick = { onHoraClick(hora) },
                 colors = colors,
-                border = if (!isSelected) ButtonDefaults.outlinedButtonBorder.copy(brush = SolidColor(colorPrincipal)) else null,
+                border = if (!isSelected)
+                    ButtonDefaults.outlinedButtonBorder.copy(brush = SolidColor(colorPrincipal))
+                else null,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(text = hora, textAlign = TextAlign.Center)
