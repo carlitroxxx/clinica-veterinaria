@@ -249,4 +249,13 @@ object Repository {
         }
     }
 
+    fun clienteTieneMascota(rutCliente: String): Boolean {
+        val sql = "SELECT 1 FROM Mascota WHERE cliente_rut = ? LIMIT 1"
+        val args = arrayOf(rutCliente)
+        val rd = db.readableDatabase
+        rd.rawQuery(sql, args).use { c ->
+            return c.moveToFirst()
+        }
+    }
+
 }

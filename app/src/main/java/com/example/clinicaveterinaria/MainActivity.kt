@@ -255,63 +255,42 @@ class MainActivity : ComponentActivity() {
                             "clientePerfilProfesional/{rut}",
                             arguments = listOf(navArgument("rut") { type = NavType.StringType })
                         ) { backStackEntry ->
-                            val rut = backStackEntry.arguments?.getString("rut") ?: ""
+                            val rutProfesional = backStackEntry.arguments?.getString("rut") ?: ""
+                            val ctx = LocalContext.current
 
-                            // 1) Traemos el profesional desde la BD
-                            val profesional = remember(rut) { Repository.obtenerProfesional(rut) }
+                            // Obtén el rut del cliente desde la sesión
+                            val emailSesion = SesionManager.obtenerEmail(ctx)
+                            val rutCliente = remember(emailSesion) {
+                                emailSesion?.let { Repository.obtenerClientePorEmail(it)?.rut }.orEmpty()
+                            }
 
-                            // 2) Derivados para la UI
+                            val profesional = remember(rutProfesional) { Repository.obtenerProfesional(rutProfesional) }
                             val nombre = profesional?.let { "${it.nombres} ${it.apellidos}" } ?: "Profesional"
                             val especialidad = profesional?.especialidad ?: "Especialidad"
-                            val generoNormalizado = profesional?.genero?.trim()?.lowercase() ?: ""
-                            // Usa drawables que EXISTAN; si no tienes perfildoctor(a), deja logo
-                            val fotoRes = when (generoNormalizado) {
-                                "f", "femenino" -> R.drawable.perfildoctora1
-                                "m", "masculino" -> R.drawable.perfildoctor1
-                                else -> R.drawable.logo
-                            }
 
-                            // 3) (Opcional) Servicios del profesional: si no tienes tabla/relación, muestra un set básico
-                            val servicios = remember(profesional?.especialidad) {
-                                buildList {
-                                    // si quieres algo más real, reemplaza por Repository.obtenerServiciosDelProfesional(rut)
-                                    add("Consulta ${profesional?.especialidad ?: "General"}")
-                                    add("Control / Evaluación")
-                                }
-                            }
-
-                            // 4) Render de la pantalla
-                            if (profesional != null) {
-                                // Tu versión de la pantalla cliente
-                                com.example.clinicaveterinaria.ui.cliente.PerfilProfesionalScreen(
-                                    nombre = nombre,
-                                    especialidad = especialidad,
-                                    bio = "",                          // si ya no usas bio, deja vacío
-                                    servicios = servicios,
-                                    fotoResId = fotoRes,
-                                    onAgendarClick = {
-                                        val rutSeg = android.net.Uri.encode(rut)
-                                        navController.navigate("clienteAgendar/$rutSeg")
-                                    },
-                                    onBackClick = { navController.popBackStack() }
-                                )
-                            } else {
-                                // Fallback simple si el rut no existe
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .padding(16.dp),
-                                    verticalArrangement = Arrangement.Center,
-                                    horizontalAlignment = Alignment.CenterHorizontally
-                                ) {
-                                    Text("Profesional no encontrado", color = MaterialTheme.colorScheme.error)
-                                    Spacer(Modifier.height(12.dp))
-                                    OutlinedButton(onClick = { navController.popBackStack() }) {
-                                        Text("Volver")
+                            com.example.clinicaveterinaria.ui.cliente.PerfilProfesionalScreen(
+                                nombre = nombre,
+                                especialidad = especialidad,
+                                bio = "",
+                                servicios = listOf("Consulta $especialidad", "Control / Evaluación"),
+                                fotoResId = R.drawable.logo,
+                                onAgendarClick = {
+                                    if (rutCliente.isBlank()) {
+                                        // sesión inconsistente → manda a login por seguridad
+                                        navController.navigate("login") {
+                                            popUpTo("login") { inclusive = true }
+                                        }
+                                    } else if (Repository.clienteTieneMascota(rutCliente)) {
+                                        navController.navigate("clienteAgendar/$rutProfesional")
+                                    } else {
+                                        navController.navigate("clienteAgregarMascota/$rutCliente")
                                     }
-                                }
-                            }
+                                },
+                                onBackClick = { navController.popBackStack() }
+                            )
                         }
+
+
 
 
                         // Agendar (mínimo funcional; guarda en BD)
