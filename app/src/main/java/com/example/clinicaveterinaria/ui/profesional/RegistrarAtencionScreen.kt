@@ -1,5 +1,6 @@
 package com.example.clinicaveterinaria.ui.profesional
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -10,6 +11,8 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -23,7 +26,6 @@ data class AtencionFormData(
 
 @Composable
 fun RegistrarAtencionScreen(
-
     idReserva: Int,
     nombrePaciente: String,
     nombreDuenio: String,
@@ -32,9 +34,12 @@ fun RegistrarAtencionScreen(
 ) {
     var mostrarFormulario by rememberSaveable { mutableStateOf(false) }
 
+    val colorPrincipal = Color(0xFF00AAB0)
+
     Button(
         onClick = { mostrarFormulario = true },
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        colors = ButtonDefaults.buttonColors(containerColor = colorPrincipal)
     ) {
         Text("Registrar atención")
     }
@@ -63,15 +68,31 @@ fun RegistrarAtencionFormDialog(
     onDismiss: () -> Unit,
     onGuardar: (AtencionFormData) -> Unit
 ) {
-    // Estado del formulario
     var estado by rememberSaveable { mutableStateOf("Realizada") }
     var diagnostico by rememberSaveable { mutableStateOf("") }
     var indicaciones by rememberSaveable { mutableStateOf("") }
     var motivoCancelacion by rememberSaveable { mutableStateOf("") }
 
-    // Validaciones simples
     val esCancelada = estado == "Cancelada"
 
+    val colorPrincipal = Color(0xFF00AAB0)
+    val colorFondoCampo = Color(0xFFF7FCFC)
+    val fieldColors = OutlinedTextFieldDefaults.colors(
+        unfocusedContainerColor = colorFondoCampo,
+        unfocusedBorderColor = colorPrincipal,
+        focusedBorderColor = colorPrincipal,
+        focusedLabelColor = colorPrincipal
+    )
+
+    // Colores para los Chips
+    val realizadaChipColors = FilterChipDefaults.filterChipColors(
+        selectedContainerColor = colorPrincipal,
+        selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+    )
+    val canceladaChipColors = FilterChipDefaults.filterChipColors(
+        selectedContainerColor = MaterialTheme.colorScheme.errorContainer,
+        selectedLabelColor = MaterialTheme.colorScheme.onErrorContainer
+    )
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -89,7 +110,12 @@ fun RegistrarAtencionFormDialog(
                             IconButton(onClick = onDismiss) {
                                 Icon(Icons.Filled.Close, contentDescription = "Cerrar")
                             }
-                        }
+                        },
+                        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                            containerColor = colorPrincipal,
+                            titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                            navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
+                        )
                     )
                 }
             ) { inner ->
@@ -119,18 +145,19 @@ fun RegistrarAtencionFormDialog(
                         FilterChip(
                             selected = estado == "Realizada",
                             onClick = { estado = "Realizada" },
-                            label = { Text("Realizada") }
+                            label = { Text("Realizada") },
+                            colors = realizadaChipColors
                         )
                         FilterChip(
                             selected = estado == "Cancelada",
                             onClick = { estado = "Cancelada" },
-                            label = { Text("Cancelada") }
+                            label = { Text("Cancelada") },
+                            colors = canceladaChipColors
                         )
                     }
 
                     Spacer(Modifier.height(16.dp))
 
-                    // Si cancelada, pedir motivo. Si realizada, pedir info clínica/pago.
                     if (esCancelada) {
                         OutlinedTextField(
                             value = motivoCancelacion,
@@ -138,7 +165,8 @@ fun RegistrarAtencionFormDialog(
                             label = { Text("Motivo de cancelación...") },
                             singleLine = false,
                             minLines = 2,
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = fieldColors
                         )
                     } else {
                         Spacer(Modifier.height(8.dp))
@@ -149,7 +177,8 @@ fun RegistrarAtencionFormDialog(
                             label = { Text("Diagnóstico") },
                             singleLine = false,
                             minLines = 2,
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = fieldColors
                         )
 
                         Spacer(Modifier.height(8.dp))
@@ -160,23 +189,24 @@ fun RegistrarAtencionFormDialog(
                             label = { Text("Indicaciones / Prescripción") },
                             singleLine = false,
                             minLines = 3,
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = fieldColors
                         )
-
 
                         Spacer(Modifier.height(8.dp))
                     }
 
                     Spacer(Modifier.height(20.dp))
 
-                    // Botones inferiores
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         OutlinedButton(
                             onClick = onDismiss,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = colorPrincipal),
+                            border = ButtonDefaults.outlinedButtonBorder.copy(brush = SolidColor(colorPrincipal))
                         ) { Text("Cancelar") }
 
                         Button(
@@ -190,7 +220,8 @@ fun RegistrarAtencionFormDialog(
                                     )
                                 )
                             },
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(containerColor = colorPrincipal)
                         ) { Text("Confirmar") }
                     }
 

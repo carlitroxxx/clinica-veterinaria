@@ -1,21 +1,29 @@
 package com.example.clinicaveterinaria.ui.profesional
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
@@ -30,7 +38,7 @@ data class PerfilUi(
     val email: String,
     val telefono: String,
     val especialidad: String? = null,
-    val password: String? = null // null = no cambiar
+    val password: String? = null
 )
 
 
@@ -43,14 +51,12 @@ fun PerfilProfesionalScreen(nav: NavHostController) {
     val emailSesion = remember { SesionManager.obtenerEmail(context) }
     val tipoSesion = remember { SesionManager.obtenerTipo(context) }
 
-    // Sin sesión o no profesional → login
     LaunchedEffect(emailSesion, tipoSesion) {
         if (emailSesion == null || tipoSesion != "profesional") {
             nav.navigate("login") { popUpTo(0) { inclusive = true } }
         }
     }
 
-    // Busca profesional por email de sesión
     val prof: Profesional = remember(Repository.profesionales, emailSesion) {
         Repository.profesionales.firstOrNull { it.email.equals(emailSesion ?: "", ignoreCase = true) }
     } ?: run {
@@ -61,31 +67,45 @@ fun PerfilProfesionalScreen(nav: NavHostController) {
         return
     }
 
-    //Estado de edición
     var editando by rememberSaveable { mutableStateOf(false) }
 
-    // Copias editables (estado local) — ahora separados
     var nombres by rememberSaveable { mutableStateOf(prof.nombres) }
     var apellidos by rememberSaveable { mutableStateOf(prof.apellidos) }
     var email by rememberSaveable { mutableStateOf(prof.email) }
     var telefono by rememberSaveable { mutableStateOf(prof.telefono) }
     var especialidad by rememberSaveable { mutableStateOf(prof.especialidad) }
 
-    // Contraseña (solo si se edita)
     var pass by rememberSaveable { mutableStateOf("") }
     var pass2 by rememberSaveable { mutableStateOf("") }
+    var showPass by rememberSaveable { mutableStateOf(false) }
 
     val passTouched = pass.isNotEmpty() || pass2.isNotEmpty()
-    val passLenOk = (!passTouched) || (pass.length >= 4 && pass2.length >= 4)
+    val passLenOk = (!passTouched) || (pass.length >= 4 && pass.length >= 4)
     val passMatchOk = (!passTouched) || (pass == pass2)
     val passValid = passLenOk && passMatchOk
+
+    val colorPrincipal = Color(0xFF00AAB0)
+    val colorFondoCampo = Color(0xFFF7FCFC)
+    val fieldColors = OutlinedTextFieldDefaults.colors(
+        // Estado normal (editable)
+        unfocusedContainerColor = colorFondoCampo,
+        unfocusedBorderColor = colorPrincipal,
+        focusedBorderColor = colorPrincipal,
+        focusedLabelColor = colorPrincipal,
+
+        // Estado ReadOnly (cuando !editando)
+        disabledContainerColor = colorFondoCampo,
+        disabledBorderColor = colorPrincipal.copy(alpha = 0.75f),
+        disabledLabelColor = colorPrincipal.copy(alpha = 0.75f),
+        disabledTextColor = MaterialTheme.colorScheme.onSurface
+    )
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
                     Text(
-                        text = if (editando) "Editar perfil" else "Perfil",
+                        text = if (editando) "Editar perfil" else "Mi Perfil",
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -97,9 +117,18 @@ fun PerfilProfesionalScreen(nav: NavHostController) {
                 },
                 actions = {
                     if (!editando) {
-                        TextButton(onClick = { editando = true }) { Text("Editar") }
+                        TextButton(
+                            onClick = { editando = true },
+                            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onPrimary)
+                        ) { Text("Editar") }
                     }
-                }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = colorPrincipal,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary,
+                    actionIconContentColor = MaterialTheme.colorScheme.onPrimary
+                )
             )
         }
     ) { paddingValues ->
@@ -113,13 +142,14 @@ fun PerfilProfesionalScreen(nav: NavHostController) {
         ) {
             Spacer(Modifier.height(8.dp))
 
-            // Avatar
             Icon(
                 imageVector = Icons.Default.AccountCircle,
                 contentDescription = "Avatar",
                 modifier = Modifier
                     .size(96.dp)
                     .clip(RoundedCornerShape(48.dp))
+                    .background(colorFondoCampo),
+                tint = colorPrincipal
             )
 
             Spacer(Modifier.height(8.dp))
@@ -139,7 +169,8 @@ fun PerfilProfesionalScreen(nav: NavHostController) {
             // Card de información
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp)
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = colorFondoCampo)
             ) {
                 Column(Modifier.padding(16.dp)) {
                     // Nombres y Apellidos separados
@@ -147,35 +178,41 @@ fun PerfilProfesionalScreen(nav: NavHostController) {
                         label = "Nombres",
                         value = nombres,
                         onValueChange = { nombres = it },
-                        enabled = editando
+                        enabled = editando,
+                        colors = fieldColors
                     )
                     CampoPerfil(
                         label = "Apellidos",
                         value = apellidos,
                         onValueChange = { apellidos = it },
-                        enabled = editando
+                        enabled = editando,
+                        colors = fieldColors
                     )
                     CampoPerfil(
                         label = "Email",
                         value = email,
                         onValueChange = { email = it },
-                        enabled = editando
+                        enabled = editando,
+                        keyboardType = KeyboardType.Email,
+                        colors = fieldColors
                     )
                     CampoPerfil(
                         label = "Teléfono",
                         value = telefono,
                         onValueChange = { telefono = it },
-                        enabled = editando
+                        enabled = editando,
+                        keyboardType = KeyboardType.Phone,
+                        colors = fieldColors
                     )
                     CampoPerfil(
                         label = "Especialidad",
                         value = especialidad,
                         onValueChange = { especialidad = it },
                         enabled = editando,
-                        placeholder = "Opcional"
+                        placeholder = "Opcional",
+                        colors = fieldColors
                     )
 
-                    //Contraseña y Confirmar contraseña
                     if (editando) {
                         Spacer(Modifier.height(8.dp))
                         OutlinedTextField(
@@ -183,13 +220,22 @@ fun PerfilProfesionalScreen(nav: NavHostController) {
                             onValueChange = { pass = it },
                             label = { Text("Contraseña") },
                             singleLine = true,
-                            visualTransformation = PasswordVisualTransformation(),
+                            visualTransformation = if (showPass) VisualTransformation.None else PasswordVisualTransformation(),
+                            trailingIcon = {
+                                IconButton(onClick = { showPass = !showPass }) {
+                                    Icon(
+                                        imageVector = if (showPass) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+                                        contentDescription = if (showPass) "Ocultar" else "Mostrar"
+                                    )
+                                }
+                            },
                             isError = !passLenOk,
                             supportingText = {
                                 if (!passLenOk) Text("Mínimo 4 caracteres")
                                 else Text("Deja vacío para no cambiar")
                             },
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = fieldColors
                         )
                         Spacer(Modifier.height(8.dp))
                         OutlinedTextField(
@@ -197,12 +243,13 @@ fun PerfilProfesionalScreen(nav: NavHostController) {
                             onValueChange = { pass2 = it },
                             label = { Text("Confirmar contraseña") },
                             singleLine = true,
-                            visualTransformation = PasswordVisualTransformation(),
+                            visualTransformation = if (showPass) VisualTransformation.None else PasswordVisualTransformation(),
                             isError = !passMatchOk,
                             supportingText = {
                                 if (!passMatchOk) Text("Las contraseñas no coinciden")
                             },
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = fieldColors
                         )
                     }
                 }
@@ -218,7 +265,6 @@ fun PerfilProfesionalScreen(nav: NavHostController) {
                 ) {
                     OutlinedButton(
                         onClick = {
-                            // Restablecer a los valores del profesional cargado
                             nombres = prof.nombres
                             apellidos = prof.apellidos
                             email = prof.email
@@ -229,14 +275,15 @@ fun PerfilProfesionalScreen(nav: NavHostController) {
                             editando = false
                         },
                         shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = colorPrincipal),
+                        border = ButtonDefaults.outlinedButtonBorder.copy(brush = SolidColor(colorPrincipal))
                     ) { Text("Cancelar") }
 
                     Spacer(Modifier.width(12.dp))
 
                     Button(
                         onClick = {
-                            // Persistir cambios: actualizar Profesional en BD
                             val actualizado: Profesional = prof.copy(
                                 nombres = nombres.trim(),
                                 apellidos = apellidos.trim(),
@@ -246,19 +293,18 @@ fun PerfilProfesionalScreen(nav: NavHostController) {
                                 password = if (passTouched) pass else prof.password
                             )
                             Repository.actualizarProfesional(actualizado)
-
-                            // Si cambió el email, refrescamos sesión
                             if (!actualizado.email.equals(emailSesion ?: "", ignoreCase = true)) {
                                 SesionManager.iniciarSesion(context, actualizado.email, "profesional")
                             }
-
                             pass = ""
                             pass2 = ""
                             editando = false
                         },
                         enabled = passValid,
                         shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        // --- CAMBIO: Colores ---
+                        colors = ButtonDefaults.buttonColors(containerColor = colorPrincipal)
                     ) { Text("Guardar") }
                 }
             } else {
@@ -278,9 +324,17 @@ fun PerfilProfesionalScreen(nav: NavHostController) {
                                 .padding(16.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(Icons.Filled.Logout, contentDescription = null)
+                            Icon(
+                                Icons.Filled.Logout,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error
+                            )
                             Spacer(Modifier.width(12.dp))
-                            Text("Cerrar sesión", style = MaterialTheme.typography.bodyLarge)
+                            Text(
+                                "Cerrar sesión",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.error
+                            )
                         }
                     }
                 }
@@ -289,7 +343,6 @@ fun PerfilProfesionalScreen(nav: NavHostController) {
     }
 }
 
-//Helpers de UI
 @Composable
 private fun CampoPerfil(
     label: String,
@@ -298,7 +351,9 @@ private fun CampoPerfil(
     enabled: Boolean,
     singleLine: Boolean = true,
     minLines: Int = 1,
-    placeholder: String? = null
+    placeholder: String? = null,
+    keyboardType: KeyboardType = KeyboardType.Text,
+    colors: TextFieldColors = OutlinedTextFieldDefaults.colors()
 ) {
     Spacer(Modifier.height(8.dp))
     OutlinedTextField(
@@ -309,6 +364,8 @@ private fun CampoPerfil(
         singleLine = singleLine,
         minLines = minLines,
         modifier = Modifier.fillMaxWidth(),
-        placeholder = placeholder?.let { { Text(it) } }
+        placeholder = placeholder?.let { { Text(it) } },
+        keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+        colors = colors
     )
 }

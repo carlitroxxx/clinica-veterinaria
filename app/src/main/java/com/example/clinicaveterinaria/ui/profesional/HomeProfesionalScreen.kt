@@ -1,5 +1,6 @@
 package com.example.clinicaveterinaria.ui.profesional
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -9,6 +10,8 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.clinicaveterinaria.data.Repository
@@ -31,7 +34,7 @@ data class ReservaUi(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeProfesionalScreen() {
-    // Estados para mostrar/ocultar los popups
+    // --- (Lógica de estado se queda igual) ---
     var mostrarDialogRegistrar by remember { mutableStateOf(false) }
     var mostrarDialogDetalle by remember { mutableStateOf(false) }
     val ctx = androidx.compose.ui.platform.LocalContext.current
@@ -84,70 +87,103 @@ fun HomeProfesionalScreen() {
     val horaSel = reservaSel?.hora ?: "—"
     val servicioSel = reservaSel?.servicio ?: "—"
 
+    val colorPrincipal = Color(0xFF00AAB0)
+    val colorFondoCampo = Color(0xFFF7FCFC)
+    val textFieldColors = TextFieldDefaults.colors(
+        unfocusedContainerColor = colorFondoCampo,
+        focusedContainerColor = colorFondoCampo,
+        unfocusedIndicatorColor = colorPrincipal,
+        focusedIndicatorColor = colorPrincipal,
+        focusedLabelColor = colorPrincipal,
+        unfocusedLabelColor = colorPrincipal.copy(alpha = 0.7f),
+        unfocusedTrailingIconColor = colorPrincipal.copy(alpha = 0.7f),
+        focusedTrailingIconColor = colorPrincipal
+    )
 
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Text(
-            "Agenda de hoy $hoy",
-            modifier = Modifier.padding(16.dp),
-            style = MaterialTheme.typography.titleLarge
-        )
-        ExposedDropdownMenuBox(
-            expanded = dropdownAbierto,
-            onExpandedChange = { dropdownAbierto = !dropdownAbierto },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-        ) {
-            TextField(
-                readOnly = true,
-                value = filtroSeleccionado,
-                onValueChange = {},
-                label = { Text("Filtrar por estado") },
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = dropdownAbierto) },
-                modifier = Modifier
-                    .menuAnchor()
-                    .fillMaxWidth()
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Agenda de hoy ($hoy)") },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = colorPrincipal,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary
+                )
             )
-            ExposedDropdownMenu(
-                expanded = dropdownAbierto,
-                onDismissRequest = { dropdownAbierto = false }
-            ) {
-                opciones.forEach { opcion ->
-                    DropdownMenuItem(
-                        text = { Text(opcion) },
-                        onClick = {
-                            filtroSeleccionado = opcion
-                            dropdownAbierto = false
-                        }
-                    )
-                }
-            }
         }
+    ) { innerPadding ->
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-                .padding(16.dp)
-                .verticalScroll(rememberScrollState()),
+                .fillMaxSize()
+                .padding(innerPadding), // <-- Padding aplicado
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-
-            when{
-                cargando -> {
-                    Text("Cargando reservas...", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            ExposedDropdownMenuBox(
+                expanded = dropdownAbierto,
+                onExpandedChange = { dropdownAbierto = !dropdownAbierto },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+            ) {
+                TextField(
+                    readOnly = true,
+                    value = filtroSeleccionado,
+                    onValueChange = {},
+                    label = { Text("Filtrar por estado") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = dropdownAbierto) },
+                    modifier = Modifier
+                        .menuAnchor()
+                        .fillMaxWidth(),
+                    colors = textFieldColors
+                )
+                ExposedDropdownMenu(
+                    expanded = dropdownAbierto,
+                    onDismissRequest = { dropdownAbierto = false }
+                ) {
+                    opciones.forEach { opcion ->
+                        DropdownMenuItem(
+                            text = { Text(opcion) },
+                            onClick = {
+                                filtroSeleccionado = opcion
+                                dropdownAbierto = false
+                            }
+                        )
+                    }
                 }
-                reservasFiltradas.isEmpty() ->{
-                    Text(
-                        "No hay reservas",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }else -> {
+            }
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .padding(horizontal = 16.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+
+                when{
+                    cargando -> {
+                        CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                    }
+                    reservasFiltradas.isEmpty() ->{
+                        Text(
+                            "No hay reservas para este filtro",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.align(Alignment.CenterHorizontally)
+                        )
+                    }else -> {
                     reservasFiltradas.forEach { r ->
-                        Card {
+
+                        val (chipColor, chipBorder, chipLabelColor) = when (r.estado) {
+                            EstadoAtencion.REALIZADA -> Triple(colorPrincipal.copy(alpha = 0.1f), null, colorPrincipal)
+                            EstadoAtencion.CANCELADA -> Triple(Color.LightGray.copy(alpha = 0.2f), null, Color.Gray)
+                            EstadoAtencion.PENDIENTE -> Triple(colorFondoCampo, BorderStroke(1.dp, colorPrincipal), colorPrincipal)
+                        }
+
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant
+                            )
+                        ) {
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -157,11 +193,12 @@ fun HomeProfesionalScreen() {
                                 Text(
                                     r.hora,
                                     style = MaterialTheme.typography.titleLarge,
-                                    fontWeight = FontWeight.SemiBold
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = colorPrincipal
                                 )
                                 Column(
                                     Modifier
-                                        .weight(0.55f)
+                                        .weight(1f)
                                         .padding(end = 8.dp, start = 20.dp)
                                 ) {
                                     Text(
@@ -178,7 +215,12 @@ fun HomeProfesionalScreen() {
                                 }
                                 AssistChip(
                                     onClick = {},
-                                    label = { Text(r.estado.name) }
+                                    label = { Text(r.estado.name) },
+                                    colors = AssistChipDefaults.assistChipColors(
+                                        containerColor = chipColor,
+                                        labelColor = chipLabelColor
+                                    ),
+                                    border = chipBorder
                                 )
                             }
 
@@ -187,33 +229,35 @@ fun HomeProfesionalScreen() {
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 10.dp, start = 16.dp, end = 16.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 OutlinedButton(
                                     onClick = { mostrarDialogDetalle = true },
                                     contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
-                                    modifier = Modifier.widthIn(min = 120.dp),
-                                    shape = RoundedCornerShape(8.dp)
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(8.dp),
+                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = colorPrincipal),
+                                    border = ButtonDefaults.outlinedButtonBorder.copy(brush = SolidColor(colorPrincipal))
                                 ) { Text("Detalle", maxLines = 1, softWrap = false) }
 
-                                OutlinedButton(
-                                    onClick = { mostrarDialogRegistrar = true /* aquí puedes pasar r.id */ },
+                                Button(
+                                    onClick = { mostrarDialogRegistrar = true },
                                     contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
                                     shape = RoundedCornerShape(8.dp),
-                                    modifier = Modifier.widthIn(min = 120.dp)
-                                ) { Text("Registrar atención", maxLines = 1, softWrap = false) }
+                                    modifier = Modifier.weight(1f),
+
+                                    colors = ButtonDefaults.buttonColors(containerColor = colorPrincipal)
+                                ) { Text("Registrar", maxLines = 1, softWrap = false) }
                             }
                         }
                     }
                 }
-
+                }
             }
-
         }
     }
 
-    // POPUP: Registrar atención
     if (mostrarDialogRegistrar && reservaSel != null) {
         RegistrarAtencionFormDialog(
             titulo = "Registrar atención",
@@ -225,7 +269,6 @@ fun HomeProfesionalScreen() {
         )
     }
 
-    // POPUP: Ver detalle
     if (mostrarDialogDetalle && reservaSel != null) {
         DetalleReservaDialog(
             paciente = reservaSel.paciente,
@@ -244,6 +287,8 @@ private fun DetalleReservaDialog(
     servicio: String,
     onCerrar: () -> Unit
 ) {
+    val colorPrincipal = Color(0xFF00AAB0)
+
     AlertDialog(
         onDismissRequest = onCerrar,
         title = { Text("Detalle de la reserva") },
@@ -256,7 +301,10 @@ private fun DetalleReservaDialog(
             }
         },
         confirmButton = {
-            FilledTonalButton(onClick = onCerrar) { Text("Cerrar") }
+            Button(
+                onClick = onCerrar,
+                colors = ButtonDefaults.buttonColors(containerColor = colorPrincipal)
+            ) { Text("Cerrar") }
         }
     )
 }
