@@ -1,5 +1,6 @@
 package com.example.clinicaveterinaria.data
 
+import com.example.clinicaveterinaria.network.AnimalTypesApi
 import android.content.Context
 import android.os.Build
 import androidx.annotation.RequiresApi
@@ -10,6 +11,14 @@ import com.example.clinicaveterinaria.model.Reserva
 import com.example.clinicaveterinaria.ui.cliente.MascotaForm
 
 object Repository {
+
+    suspend fun obtenerTiposAnimalDesdeApi(): List<String> {
+        return try {
+            AnimalTypesApi.service.getAnimalTypes()
+        } catch (e: Exception) {
+            listOf("Perro", "Gato", "Caballo")
+        }
+    }
     private lateinit var db: BaseDatos
     private val _profesionales = mutableStateListOf<Profesional>()
     val profesionales: List<Profesional> get() = _profesionales

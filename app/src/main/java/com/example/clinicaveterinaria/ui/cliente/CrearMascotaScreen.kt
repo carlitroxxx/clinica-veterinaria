@@ -1,7 +1,6 @@
 package com.example.clinicaveterinaria.ui.cliente
 
 import android.annotation.SuppressLint
-import android.util.Patterns
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -17,15 +16,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.clinicaveterinaria.R
 import com.example.clinicaveterinaria.data.Repository
-import com.example.clinicaveterinaria.data.SesionManager
-import com.example.clinicaveterinaria.model.Cliente
-import com.example.clinicaveterinaria.util.RutUtils
-
+import com.example.clinicaveterinaria.ui.mascota.MascotaViewModel
+import com.example.clinicaveterinaria.ui.mascota.TipoAnimalDropdown
 
 data class MascotaForm(
     val clienteRut: String,
@@ -56,15 +53,21 @@ fun CrearMascotaRoute(
     )
 }
 
-
-//Pantalla principal
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CrearMascotaScreen(
     clienteRut: String,
     onGuardar: (MascotaForm) -> Unit,
-    onCancelar: () -> Unit
+    onCancelar: () -> Unit,
+    viewModel: MascotaViewModel = viewModel()
 ) {
+
+    // Cargar API externa al iniciar
+    LaunchedEffect(Unit) {
+        viewModel.cargarTiposAnimal()
+    }
+
+    val tiposAnimal by viewModel.tiposAnimal.collectAsState()
 
     var rut by rememberSaveable { mutableStateOf(clienteRut) }
     var nombre by rememberSaveable { mutableStateOf("") }
@@ -73,7 +76,6 @@ fun CrearMascotaScreen(
     var sexo by rememberSaveable { mutableStateOf("") }
     var fechaNac by rememberSaveable { mutableStateOf("") }
 
-    val especies = listOf("Perro", "Gato", "Ave", "Conejo", "Reptil", "Otro")
     val sexos = listOf("Macho", "Hembra", "Desconocido")
 
     val nombreOk = nombre.trim().isNotEmpty()
@@ -141,7 +143,7 @@ fun CrearMascotaScreen(
             item {
                 OutlinedTextField(
                     value = rut,
-                    onValueChange = { /* readOnly visual */ },
+                    onValueChange = { },
                     label = { Text("RUT Cliente") },
                     singleLine = true,
                     enabled = false,
@@ -150,6 +152,7 @@ fun CrearMascotaScreen(
                 )
             }
 
+            // Nombre mascota
             item {
                 OutlinedTextField(
                     value = nombre,
@@ -165,58 +168,29 @@ fun CrearMascotaScreen(
                 )
             }
 
-            // Especie
+            // ESPECIE desde API externa con componente reutilizable
             item {
-                ExposedDropdownMenuBox(
-                    expanded = expEspecie,
-                    onExpandedChange = { expEspecie = !expEspecie }
-                ) {
-                    OutlinedTextField(
-                        value = especie,
-                        onValueChange = { especie = it },
-                        label = { Text("Especie") },
-                        singleLine = true,
-                        readOnly = true,
-                        isError = especie.isNotEmpty() && !especieOk,
-                        supportingText = {
-                            if (especie.isNotEmpty() && !especieOk) Text("Selecciona una especie")
-                        },
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expEspecie) },
-                        modifier = Modifier
-                            .menuAnchor()
-                            .fillMaxWidth(),
-                        colors = fieldColors
-                    )
-                    ExposedDropdownMenu(
-                        expanded = expEspecie,
-                        onDismissRequest = { expEspecie = false }
-                    ) {
-                        especies.forEach { opt ->
-                            DropdownMenuItem(
-                                text = { Text(opt) },
-                                onClick = {
-                                    especie = opt
-                                    expEspecie = false
-                                }
-                            )
-                        }
-                    }
-                }
+                TipoAnimalDropdown(
+                    tipos = tiposAnimal,
+                    selected = especie,
+                    onSelectedChange = { especie = it },
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
 
-            // Raza (opcional)
+
+            // RAZA
             item {
                 OutlinedTextField(
                     value = raza,
                     onValueChange = { raza = it },
                     label = { Text("Raza (opcional)") },
-                    singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     colors = fieldColors
                 )
             }
 
-            // Sexo
+            // SEXO
             item {
                 ExposedDropdownMenuBox(
                     expanded = expSexo,
@@ -224,11 +198,10 @@ fun CrearMascotaScreen(
                 ) {
                     OutlinedTextField(
                         value = sexo,
-                        onValueChange = { sexo = it },
+                        onValueChange = {},
                         label = { Text("Sexo (opcional)") },
-                        singleLine = true,
                         readOnly = true,
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expSexo) },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expSexo) },
                         modifier = Modifier
                             .menuAnchor()
                             .fillMaxWidth(),
@@ -251,28 +224,22 @@ fun CrearMascotaScreen(
                 }
             }
 
+            // Fecha de nacimiento
             item {
                 OutlinedTextField(
                     value = fechaNac,
                     onValueChange = { fechaNac = it },
                     label = { Text("Fecha de nacimiento (opcional)") },
                     placeholder = { Text("AAAA-MM-DD") },
-                    singleLine = true,
-                    isError = fechaNac.isNotEmpty() && !fechaOk,
-                    supportingText = {
-                        if (fechaNac.isNotEmpty() && !fechaOk) Text("Usa el formato AAAA-MM-DD")
-                    },
                     modifier = Modifier.fillMaxWidth(),
                     colors = fieldColors
                 )
             }
 
-            // Botones
+            // BOTONES
             item {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 8.dp),
+                    modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -281,7 +248,9 @@ fun CrearMascotaScreen(
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = colorPrincipal),
                         border = ButtonDefaults.outlinedButtonBorder.copy(brush = SolidColor(colorPrincipal))
-                    ) { Text("Cancelar") }
+                    ) {
+                        Text("Cancelar")
+                    }
 
                     Button(
                         onClick = {
@@ -299,7 +268,9 @@ fun CrearMascotaScreen(
                         enabled = formOk,
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(containerColor = colorPrincipal)
-                    ) { Text("Guardar") }
+                    ) {
+                        Text("Guardar")
+                    }
                 }
             }
         }
