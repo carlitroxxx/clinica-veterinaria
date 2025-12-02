@@ -36,16 +36,6 @@ import java.util.Locale
 import java.util.TimeZone
 
 
-@Composable
-fun CrearProfesionalRoute(nav: NavHostController) {
-    CrearProfesionalScreen(
-        onGuardar = { p ->
-            Repository.agregarProfesional(p)
-            nav.popBackStack()
-        },
-        onCancelar = { nav.popBackStack() }
-    )
-}
 
 // Pantalla de Crear Profesional
 @OptIn(ExperimentalMaterial3Api::class)

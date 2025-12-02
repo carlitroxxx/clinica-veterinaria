@@ -6,50 +6,51 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.annotation.RequiresApi
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavType
-import androidx.navigation.compose.*
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.clinicaveterinaria.data.Repository
 import com.example.clinicaveterinaria.data.SesionManager
+import com.example.clinicaveterinaria.model.Cliente
+import com.example.clinicaveterinaria.model.Profesional as ProfesionalRemote
 import com.example.clinicaveterinaria.model.Reserva
 import com.example.clinicaveterinaria.ui.admin.CrearProfesionalScreen
 import com.example.clinicaveterinaria.ui.admin.ListaProfesionalesScreen
 import com.example.clinicaveterinaria.ui.admin.ModificarProfesionalScreen
 import com.example.clinicaveterinaria.ui.admin.PerfilAdministradorScreen
+import com.example.clinicaveterinaria.ui.cliente.AgendarScreen
+import com.example.clinicaveterinaria.ui.cliente.CrearClienteRoute
+import com.example.clinicaveterinaria.ui.cliente.CrearMascotaRoute
+import com.example.clinicaveterinaria.ui.cliente.MisReservasScreen
+import com.example.clinicaveterinaria.ui.cliente.PerfilClienteScreen
+import com.example.clinicaveterinaria.ui.cliente.ProfesionalesScreen
+import com.example.clinicaveterinaria.ui.cliente.ProfesionalUi
+import com.example.clinicaveterinaria.ui.cliente.ReservaMock
 import com.example.clinicaveterinaria.ui.login.LoginScreen
 import com.example.clinicaveterinaria.ui.profesional.HomeProfesionalScreen
 import com.example.clinicaveterinaria.ui.profesional.PerfilProfesionalScreen as PerfilProfesionalDoctorScreen
 import com.example.clinicaveterinaria.ui.theme.ClinicaVeterinariaTheme
-
-import com.example.clinicaveterinaria.ui.cliente.MisReservasScreen
-import com.example.clinicaveterinaria.ui.cliente.ReservaMock
-import com.example.clinicaveterinaria.ui.cliente.AgendarScreen
-import com.example.clinicaveterinaria.ui.cliente.CrearClienteRoute
-import com.example.clinicaveterinaria.ui.cliente.CrearMascotaRoute
-
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Repository.init(this)
         enableEdgeToEdge()
 
         setContent {
@@ -58,6 +59,7 @@ class MainActivity : ComponentActivity() {
                 val backStack by navController.currentBackStackEntryAsState()
                 val currentRoute = backStack?.destination?.route
                 val context = LocalContext.current
+                val scope = rememberCoroutineScope()
 
                 var sesionActiva by remember { mutableStateOf(SesionManager.haySesionActiva(context)) }
                 var tipoSesion by remember { mutableStateOf(SesionManager.obtenerTipo(context)) }
@@ -147,20 +149,32 @@ class MainActivity : ComponentActivity() {
                         composable("login") {
                             LoginScreen(navController, context)
                         }
-                        // Ruta para registro de cliente desde el login
+
+                        // Registro de cliente desde el login
                         composable("crearCliente") {
                             CrearClienteRoute(nav = navController)
                         }
 
                         // ---------- ADMIN ----------
-                        composable("adminHome") { ListaProfesionalesScreen(navController) }
-                        composable("perfilAdmin") { PerfilAdministradorScreen(navController) }
+                        composable("adminHome") {
+                            ListaProfesionalesScreen(navController)
+                        }
+
+                        composable("perfilAdmin") {
+                            PerfilAdministradorScreen(navController)
+                        }
 
                         composable("crearProfesional") {
                             CrearProfesionalScreen(
                                 onGuardar = { prof ->
-                                    Repository.agregarProfesional(prof)
-                                    navController.popBackStack()
+                                    scope.launch {
+                                        try {
+                                            Repository.agregarProfesional(prof)
+                                            navController.popBackStack()
+                                        } catch (_: Exception) {
+                                            // Podrías mostrar un snackbar si quieres
+                                        }
+                                    }
                                 },
                                 onCancelar = { navController.popBackStack() }
                             )
@@ -171,49 +185,100 @@ class MainActivity : ComponentActivity() {
                             arguments = listOf(navArgument("rut") { type = NavType.StringType })
                         ) { backStackEntry ->
                             val rut = backStackEntry.arguments?.getString("rut") ?: ""
-                            val prof = Repository.obtenerProfesional(rut)
 
-                            if (prof != null) {
-                                ModificarProfesionalScreen(
-                                    profesional = prof,
-                                    onGuardar = { actualizado ->
-                                        Repository.actualizarProfesional(actualizado)
-                                        navController.popBackStack()
-                                    },
-                                    onCancelar = { navController.popBackStack() },
-                                    onEliminar = { p ->
-                                        Repository.eliminarProfesional(p.rut)
-                                        navController.popBackStack()
+                            var profesional by remember(rut) { mutableStateOf<ProfesionalRemote?>(null) }
+                            var cargando by remember(rut) { mutableStateOf(true) }
+                            var error by remember(rut) { mutableStateOf<String?>(null) }
+
+                            LaunchedEffect(rut) {
+                                cargando = true
+                                error = null
+                                try {
+                                    profesional = Repository.obtenerProfesional(rut)
+                                } catch (e: Exception) {
+                                    error = "Error al cargar profesional"
+                                } finally {
+                                    cargando = false
+                                }
+                            }
+
+                            when {
+                                cargando -> {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .padding(16.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        CircularProgressIndicator()
                                     }
-                                )
-                            } else {
-                                Text("Profesional no encontrado", color = Color.Red)
+                                }
+                                error != null -> {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .padding(16.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(error ?: "Error", color = MaterialTheme.colorScheme.error)
+                                    }
+                                }
+                                profesional != null -> {
+                                    ModificarProfesionalScreen(
+                                        profesional = profesional!!,
+                                        onGuardar = { actualizado ->
+                                            scope.launch {
+                                                try {
+                                                    Repository.actualizarProfesional(actualizado)
+                                                    navController.popBackStack()
+                                                } catch (_: Exception) { }
+                                            }
+                                        },
+                                        onCancelar = { navController.popBackStack() },
+                                        onEliminar = { p ->
+                                            scope.launch {
+                                                try {
+                                                    Repository.eliminarProfesional(p.rut)
+                                                    navController.popBackStack()
+                                                } catch (_: Exception) { }
+                                            }
+                                        }
+                                    )
+                                }
+                                else -> {
+                                    Text("Profesional no encontrado", color = Color.Red)
+                                }
                             }
                         }
 
                         // ---------- PROFESIONAL ----------
-                        composable("profesionalHome") { HomeProfesionalScreen() }
-                        composable("perfilProfesional") { PerfilProfesionalDoctorScreen(navController) }
+                        composable("profesionalHome") {
+                            HomeProfesionalScreen()
+                        }
+
+                        composable("perfilProfesional") {
+                            PerfilProfesionalDoctorScreen(navController)
+                        }
 
                         // ---------- CLIENTE ----------
 
+                        // Lista de profesionales para el cliente
                         composable("clienteProfesionales") {
-                            var uiProfesionales by remember { mutableStateOf<List<com.example.clinicaveterinaria.ui.cliente.Profesional>>(emptyList()) }
+                            var profesionales by remember { mutableStateOf<List<ProfesionalUi>>(emptyList()) }
 
                             LaunchedEffect(Unit) {
-                                val desdeDb: List<com.example.clinicaveterinaria.model.Profesional> =
-                                    try { Repository.obtenerProfesionales() } catch (_: Exception) { emptyList() }
+                                val desdeApi: List<ProfesionalRemote> = try {
+                                    Repository.obtenerProfesionales()
+                                } catch (_: Exception) {
+                                    emptyList()
+                                }
 
-                                uiProfesionales = desdeDb.map { p ->
-                                    com.example.clinicaveterinaria.ui.cliente.Profesional(
+                                profesionales = desdeApi.map { p ->
+                                    ProfesionalUi(
                                         rut = p.rut,
                                         nombres = p.nombres,
                                         apellidos = p.apellidos,
-                                        genero = when (p.genero.trim().lowercase()) {
-                                            "f", "femenino" -> "Femenino"
-                                            "m", "masculino" -> "Masculino"
-                                            else -> p.genero
-                                        },
+                                        genero = p.genero,
                                         fechaNacimiento = p.fechaNacimiento,
                                         especialidad = p.especialidad,
                                         email = p.email,
@@ -222,8 +287,8 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
 
-                            com.example.clinicaveterinaria.ui.cliente.ProfesionalesScreen(
-                                profesionales = uiProfesionales,
+                            ProfesionalesScreen(
+                                profesionales = profesionales,
                                 onProfesionalClick = { rut ->
                                     val rutSeg = android.net.Uri.encode(rut)
                                     navController.navigate("clientePerfilProfesional/$rutSeg")
@@ -231,8 +296,7 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
-
-
+                        // Perfil de un profesional visto por el cliente
                         composable(
                             "clientePerfilProfesional/{rut}",
                             arguments = listOf(navArgument("rut") { type = NavType.StringType })
@@ -241,11 +305,24 @@ class MainActivity : ComponentActivity() {
                             val ctx = LocalContext.current
 
                             val emailSesion = SesionManager.obtenerEmail(ctx)
-                            val rutCliente = remember(emailSesion) {
-                                emailSesion?.let { Repository.obtenerClientePorEmail(it)?.rut }.orEmpty()
+
+                            var rutCliente by remember { mutableStateOf<String?>(null) }
+                            var profesional by remember { mutableStateOf<ProfesionalRemote?>(null) }
+
+                            LaunchedEffect(emailSesion) {
+                                if (emailSesion != null) {
+                                    try {
+                                        rutCliente = Repository.obtenerClientePorEmail(emailSesion)?.rut
+                                    } catch (_: Exception) { }
+                                }
                             }
 
-                            val profesional = remember(rutProfesional) { Repository.obtenerProfesional(rutProfesional) }
+                            LaunchedEffect(rutProfesional) {
+                                try {
+                                    profesional = Repository.obtenerProfesional(rutProfesional)
+                                } catch (_: Exception) { }
+                            }
+
                             val nombre = profesional?.let { "${it.nombres} ${it.apellidos}" } ?: "Profesional"
                             val especialidad = profesional?.especialidad ?: "Especialidad"
 
@@ -256,34 +333,57 @@ class MainActivity : ComponentActivity() {
                                 servicios = listOf("Consulta $especialidad", "Control / Evaluación"),
                                 fotoResId = R.drawable.logo,
                                 onAgendarClick = {
-                                    if (rutCliente.isBlank()) {
+                                    val rutCli = rutCliente
+                                    if (rutCli.isNullOrBlank()) {
                                         navController.navigate("login") {
                                             popUpTo("login") { inclusive = true }
                                         }
-                                    } else if (Repository.clienteTieneMascota(rutCliente)) {
-                                        navController.navigate("clienteAgendar/$rutProfesional")
                                     } else {
-                                        navController.navigate("clienteAgregarMascota/$rutCliente")
+                                        scope.launch {
+                                            val tieneMascota = try {
+                                                Repository.clienteTieneMascota(rutCli)
+                                            } catch (_: Exception) {
+                                                false
+                                            }
+
+                                            if (tieneMascota) {
+                                                navController.navigate("clienteAgendar/$rutProfesional")
+                                            } else {
+                                                navController.navigate("clienteAgregarMascota/$rutCli")
+                                            }
+                                        }
                                     }
                                 },
                                 onBackClick = { navController.popBackStack() }
                             )
                         }
 
-
-
-
+                        // Agendar reserva
                         composable(
                             "clienteAgendar/{rut}",
                             arguments = listOf(navArgument("rut") { type = NavType.StringType })
                         ) { backStackEntry ->
                             val rutProfesional = backStackEntry.arguments?.getString("rut") ?: ""
                             val ctx = LocalContext.current
-
                             val emailSesion = SesionManager.obtenerEmail(ctx)
-                            val clienteRut = remember(emailSesion) { emailSesion?.let { Repository.obtenerClientePorEmail(it)?.rut } }
 
-                            val prof = remember(rutProfesional) { Repository.obtenerProfesional(rutProfesional) }
+                            var clienteRut by remember { mutableStateOf<String?>(null) }
+                            var prof by remember { mutableStateOf<ProfesionalRemote?>(null) }
+
+                            LaunchedEffect(emailSesion) {
+                                if (emailSesion != null) {
+                                    try {
+                                        clienteRut = Repository.obtenerClientePorEmail(emailSesion)?.rut
+                                    } catch (_: Exception) { }
+                                }
+                            }
+
+                            LaunchedEffect(rutProfesional) {
+                                try {
+                                    prof = Repository.obtenerProfesional(rutProfesional)
+                                } catch (_: Exception) { }
+                            }
+
                             val nombreProf = prof?.let { "${it.nombres} ${it.apellidos}" } ?: "Profesional"
                             val especialidad = prof?.especialidad ?: ""
                             val fotoResId = R.drawable.logo
@@ -295,11 +395,12 @@ class MainActivity : ComponentActivity() {
                             var error by remember { mutableStateOf<String?>(null) }
 
                             var horarios by remember { mutableStateOf<List<String>>(emptyList()) }
+
                             LaunchedEffect(fecha, rutProfesional) {
                                 horarios = try {
                                     if (fecha.isBlank()) emptyList()
                                     else Repository.horasDisponibles(rutProfesional, fecha)
-                                } catch (e: Exception) {
+                                } catch (_: Exception) {
                                     emptyList()
                                 }
                                 if (hora.isNotBlank() && hora !in horarios) hora = ""
@@ -315,17 +416,33 @@ class MainActivity : ComponentActivity() {
                                 mensajeError = error,
                                 mensajeExito = ok,
                                 onConfirmarClick = {
-                                    if (fecha.isBlank() || hora.isBlank() || servicio.isBlank()) {
-                                        ok = null; error = "Completa fecha, hora y servicio"
-                                    } else if (clienteRut.isNullOrBlank()) {
-                                        ok = null; error = "No se pudo identificar al cliente (sesión)"
-                                    } else {
-                                        val res = Repository.agregarReserva(clienteRut, rutProfesional, fecha, hora, servicio)
-                                        if (res.ok) {
-                                            error = null; ok = "Reserva creada ✔"
-                                            navController.navigate("clienteMisReservas")
-                                        } else {
-                                            ok = null; error = res.mensaje ?: "Error al crear la reserva"
+                                    val rutCli = clienteRut
+                                    when {
+                                        fecha.isBlank() || hora.isBlank() || servicio.isBlank() -> {
+                                            ok = null
+                                            error = "Completa fecha, hora y servicio"
+                                        }
+                                        rutCli.isNullOrBlank() -> {
+                                            ok = null
+                                            error = "No se pudo identificar al cliente (sesión)"
+                                        }
+                                        else -> {
+                                            scope.launch {
+                                                val res = try {
+                                                    Repository.agregarReserva(rutCli, rutProfesional, fecha, hora, servicio)
+                                                } catch (e: Exception) {
+                                                    null
+                                                }
+
+                                                if (res != null && res.ok) {
+                                                    error = null
+                                                    ok = "Reserva creada ✔"
+                                                    navController.navigate("clienteMisReservas")
+                                                } else {
+                                                    ok = null
+                                                    error = res?.mensaje ?: "Error al crear la reserva"
+                                                }
+                                            }
                                         }
                                     }
                                 },
@@ -337,30 +454,40 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
-
-
+                        // Mis reservas del cliente
                         composable("clienteMisReservas") {
                             val ctx = LocalContext.current
                             val emailSesion = SesionManager.obtenerEmail(ctx)
-                            val rutCliente = remember(emailSesion) {
-                                emailSesion?.let { Repository.obtenerClientePorEmail(it)?.rut }
-                            }
 
+                            var rutCliente by remember { mutableStateOf<String?>(null) }
                             var reservasRepo by remember { mutableStateOf<List<Reserva>>(emptyList()) }
 
+                            LaunchedEffect(emailSesion) {
+                                if (emailSesion != null) {
+                                    try {
+                                        rutCliente = Repository.obtenerClientePorEmail(emailSesion)?.rut
+                                    } catch (_: Exception) { }
+                                }
+                            }
+
                             LaunchedEffect(rutCliente) {
-                                rutCliente?.let { reservasRepo = Repository.obtenerReservasCliente(it) }
+                                val rutCli = rutCliente
+                                if (!rutCli.isNullOrBlank()) {
+                                    reservasRepo = try {
+                                        Repository.obtenerReservasCliente(rutCli)
+                                    } catch (_: Exception) {
+                                        emptyList()
+                                    }
+                                }
                             }
 
                             val reservasUi = remember(reservasRepo) {
                                 reservasRepo.map { r ->
-                                    val prof = Repository.obtenerProfesional(r.profesionalRut)
-                                    val nombreProf = prof?.let { "${it.nombres} ${it.apellidos}" } ?: r.profesionalRut
                                     ReservaMock(
                                         id = r.id.toString(),
                                         fecha = r.fecha,
                                         hora = r.hora,
-                                        profesional = nombreProf,
+                                        profesional = r.profesionalRut, // simple: mostramos RUT
                                         servicio = r.servicio,
                                         estado = r.estado
                                     )
@@ -370,57 +497,97 @@ class MainActivity : ComponentActivity() {
                             MisReservasScreen(
                                 reservas = reservasUi,
                                 onCancelarClick = { idStr ->
+                                    val rutCli = rutCliente
                                     val id = idStr.toLongOrNull()
-                                    if (id != null && rutCliente != null) {
-                                        val res = Repository.cancelarReserva(id)
-                                        if (res.ok) reservasRepo = Repository.obtenerReservasCliente(rutCliente)
+                                    if (id != null && !rutCli.isNullOrBlank()) {
+                                        scope.launch {
+                                            val res = try {
+                                                Repository.cancelarReserva(id)
+                                            } catch (_: Exception) {
+                                                null
+                                            }
+                                            if (res != null && res.ok) {
+                                                reservasRepo = try {
+                                                    Repository.obtenerReservasCliente(rutCli)
+                                                } catch (_: Exception) {
+                                                    emptyList()
+                                                }
+                                            }
+                                        }
                                     }
                                 },
                                 onBackClick = { navController.popBackStack() }
                             )
                         }
 
+                        // Perfil cliente
                         composable("clientePerfil") {
                             val ctx = LocalContext.current
                             val emailSesion = SesionManager.obtenerEmail(ctx)
-                            val cliente = remember(emailSesion) {
-                                emailSesion?.let { Repository.obtenerClientePorEmail(it) }
+
+                            var cliente by remember { mutableStateOf<Cliente?>(null) }
+                            var cargando by remember { mutableStateOf(true) }
+
+                            LaunchedEffect(emailSesion) {
+                                cargando = true
+                                try {
+                                    cliente = if (emailSesion != null) {
+                                        Repository.obtenerClientePorEmail(emailSesion)
+                                    } else null
+                                } catch (_: Exception) {
+                                    cliente = null
+                                } finally {
+                                    cargando = false
+                                }
                             }
 
-                            if (cliente != null) {
-                                com.example.clinicaveterinaria.ui.screens.paciente.PerfilClienteScreen(
-                                    mockNombre = "${cliente.nombres} ${cliente.apellidos}",
-                                    mockEmail = cliente.email,
-                                    mockTelefono = cliente.telefono,
-                                    onChangePasswordClick = { /* TODO */ },
-                                    onLogoutClick = {
-                                        SesionManager.cerrarSesion(ctx)
-                                        navController.navigate("login") {
-                                            popUpTo("login") { inclusive = true }
-                                        }
+                            when {
+                                cargando -> {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .padding(16.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        CircularProgressIndicator()
                                     }
-                                )
-                            } else {
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .padding(16.dp),
-                                    verticalArrangement = Arrangement.Center,
-                                    horizontalAlignment = Alignment.CenterHorizontally
-                                ) {
-                                    Text("No se pudo cargar el perfil", color = MaterialTheme.colorScheme.error)
-                                    Spacer(Modifier.height(12.dp))
-                                    OutlinedButton(onClick = {
-                                        SesionManager.cerrarSesion(ctx)
-                                        navController.navigate("login") {
-                                            popUpTo("login") { inclusive = true }
+                                }
+                                cliente != null -> {
+                                    PerfilClienteScreen(
+                                        mockNombre = "${cliente!!.nombres} ${cliente!!.apellidos}",
+                                        mockEmail = cliente!!.email,
+                                        mockTelefono = cliente!!.telefono,
+                                        onChangePasswordClick = { /* TODO si quieres */ },
+                                        onLogoutClick = {
+                                            SesionManager.cerrarSesion(ctx)
+                                            navController.navigate("login") {
+                                                popUpTo("login") { inclusive = true }
+                                            }
                                         }
-                                    }) { Text("Volver a iniciar sesión") }
+                                    )
+                                }
+                                else -> {
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .padding(16.dp),
+                                        verticalArrangement = Arrangement.Center,
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Text("No se pudo cargar el perfil", color = MaterialTheme.colorScheme.error)
+                                        Spacer(Modifier.height(12.dp))
+                                        OutlinedButton(onClick = {
+                                            SesionManager.cerrarSesion(ctx)
+                                            navController.navigate("login") {
+                                                popUpTo("login") { inclusive = true }
+                                            }
+                                        }) { Text("Volver a iniciar sesión") }
+                                    }
                                 }
                             }
                         }
 
-
+                        // Registrar mascota después de crear cliente
                         composable(
                             "clienteAgregarMascota/{rutCliente}",
                             arguments = listOf(navArgument("rutCliente") { type = NavType.StringType })
@@ -437,4 +604,3 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
-

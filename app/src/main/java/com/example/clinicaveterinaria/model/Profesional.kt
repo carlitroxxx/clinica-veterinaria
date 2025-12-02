@@ -1,4 +1,5 @@
 package com.example.clinicaveterinaria.model
+
 data class Profesional(
     val rut: String,
     val nombres: String,

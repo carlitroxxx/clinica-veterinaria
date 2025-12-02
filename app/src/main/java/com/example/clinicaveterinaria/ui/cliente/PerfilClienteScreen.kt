@@ -1,4 +1,4 @@
-package com.example.clinicaveterinaria.ui.screens.paciente
+package com.example.clinicaveterinaria.ui.cliente
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*

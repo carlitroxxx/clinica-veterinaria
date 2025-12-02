@@ -12,7 +12,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -26,15 +31,37 @@ import androidx.navigation.NavHostController
 import com.example.clinicaveterinaria.R
 import com.example.clinicaveterinaria.data.Repository
 import com.example.clinicaveterinaria.data.SesionManager
+import com.example.clinicaveterinaria.model.Profesional
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PerfilAdministradorScreen(nav: NavHostController) {
+
+    var listaProfesionales by remember { mutableStateOf<List<Profesional>>(emptyList()) }
+    var cargando by remember { mutableStateOf(true) }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(Unit) {
+        scope.launch {
+            try {
+                listaProfesionales = Repository.obtenerProfesionales()
+                error = null
+            } catch (e: Exception) {
+                error = "No se pudo cargar la lista."
+            }
+            cargando = false
+        }
+    }
+
     val context = LocalContext.current
+
     val email = SesionManager.obtenerEmail(context) ?: "admin@correo.cl"
 
 
-    val totalProfesionales = Repository.profesionales.size
+    val totalProfesionales = listaProfesionales.size
 
     val colorPrincipal = Color(0xFF00AAB0)
     val colorFondoClaro = Color(0xFFF7FCFC)

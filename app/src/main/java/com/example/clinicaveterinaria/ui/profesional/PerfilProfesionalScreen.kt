@@ -78,7 +78,7 @@ fun PerfilProfesionalScreen(nav: NavHostController) {
     var showPass by rememberSaveable { mutableStateOf(false) }
 
     val passTouched = pass.isNotEmpty() || pass2.isNotEmpty()
-    val passLenOk = (!passTouched) || (pass.length >= 4 && pass.length >= 4)
+    val passLenOk = (!passTouched) || (pass.length >= 4 && pass2.length >= 4)
     val passMatchOk = (!passTouched) || (pass == pass2)
     val passValid = passLenOk && passMatchOk
 
@@ -285,10 +285,22 @@ fun PerfilProfesionalScreen(nav: NavHostController) {
                                 especialidad = especialidad.trim().ifEmpty { prof.especialidad },
                                 password = if (passTouched) pass else prof.password
                             )
+
                             Repository.actualizarProfesional(actualizado)
-                            if (!actualizado.email.equals(emailSesion ?: "", ignoreCase = true)) {
-                                SesionManager.iniciarSesion(context, actualizado.email, "profesional")
+
+                            val tokenActual = SesionManager.obtenerToken(context)
+
+                            if (tokenActual != null &&
+                                !actualizado.email.equals(emailSesion ?: "", ignoreCase = true)
+                            ) {
+                                SesionManager.iniciarSesion(
+                                    context,
+                                    actualizado.email,
+                                    "profesional",
+                                    tokenActual
+                                )
                             }
+
                             pass = ""
                             pass2 = ""
                             editando = false
@@ -297,7 +309,10 @@ fun PerfilProfesionalScreen(nav: NavHostController) {
                         shape = RoundedCornerShape(12.dp),
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(containerColor = colorPrincipal)
-                    ) { Text("Guardar") }
+                    ) {
+                        Text("Guardar")
+                    }
+
                 }
             } else {
                 Column(Modifier.fillMaxWidth()) {

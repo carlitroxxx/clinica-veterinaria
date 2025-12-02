@@ -1,4 +1,5 @@
 package com.example.clinicaveterinaria.model
+
 data class Reserva(
     val id: Long,
     val fecha: String,

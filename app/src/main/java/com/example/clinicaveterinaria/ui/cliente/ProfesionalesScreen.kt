@@ -1,3 +1,4 @@
+// ProfesionalesScreen.kt
 package com.example.clinicaveterinaria.ui.cliente
 
 import androidx.compose.foundation.Image
@@ -19,7 +20,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.clinicaveterinaria.R
 
-data class Profesional (
+// 🔹 Modelo SOLO para la UI (no tiene password)
+data class ProfesionalUi(
     val rut: String,
     val nombres: String,
     val apellidos: String,
@@ -33,7 +35,7 @@ data class Profesional (
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfesionalesScreen(
-    profesionales: List<Profesional>,
+    profesionales: List<ProfesionalUi>,
     onProfesionalClick: (profesionalRut: String) -> Unit
 ) {
     val colorPrincipal = Color(0xFF00AAB0)
@@ -68,6 +70,7 @@ fun ProfesionalesScreen(
                         .padding(bottom = 16.dp)
                 )
             }
+
             if (profesionales.isEmpty()) {
                 item {
                     EmptyProfesionalesState()
@@ -89,9 +92,10 @@ fun ProfesionalesScreen(
         }
     }
 }
+
 @Composable
 fun ProfesionalCard(
-    profesional: Profesional,
+    profesional: ProfesionalUi,
     @androidx.annotation.DrawableRes fotoResId: Int,
     onClick: () -> Unit
 ) {
@@ -135,6 +139,7 @@ fun ProfesionalCard(
         }
     }
 }
+
 @Composable
 private fun EmptyProfesionalesState() {
     Card(
