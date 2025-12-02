@@ -70,7 +70,7 @@ fun MisReservasScreen(
                 )
             }
         } else {
-            //Listar reservas
+            // Listar reservas
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
@@ -78,7 +78,8 @@ fun MisReservasScreen(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                items(reservas, key = { it.id }) { reserva ->
+                // OJO: sin key para evitar crash por IDs duplicadas
+                items(reservas) { reserva ->
                     ReservaCard(
                         reserva = reserva,
                         onCancelarClick = { onCancelarClick(reserva.id) },
@@ -89,6 +90,7 @@ fun MisReservasScreen(
         }
     }
 }
+
 @Composable
 fun ReservaCard(
     reserva: ReservaMock,
@@ -154,7 +156,9 @@ fun ReservaCard(
                     onClick = onCancelarClick,
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = colorPrincipal),
-                    border = ButtonDefaults.outlinedButtonBorder.copy(brush = SolidColor(colorPrincipal))
+                    border = ButtonDefaults.outlinedButtonBorder.copy(
+                        brush = SolidColor(colorPrincipal)
+                    )
                 ) {
                     Text("Cancelar Reserva")
                 }
