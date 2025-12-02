@@ -73,7 +73,6 @@ fun CrearMascotaScreen(
     errorMessage: String? = null,
     viewModel: MascotaViewModel = viewModel()
 ) {
-    // Cargar API externa al iniciar
     LaunchedEffect(Unit) {
         viewModel.cargarTiposAnimal()
     }
@@ -178,7 +177,6 @@ fun CrearMascotaScreen(
                 )
             }
 
-            // ESPECIE desde API externa con componente reutilizable
             item {
                 TipoAnimalDropdown(
                     tipos = tiposAnimal,
@@ -233,7 +231,6 @@ fun CrearMascotaScreen(
                 }
             }
 
-            // Fecha de nacimiento
             item {
                 OutlinedTextField(
                     value = fechaNac,
@@ -250,7 +247,6 @@ fun CrearMascotaScreen(
                 )
             }
 
-            // Error del backend (si hay)
             if (errorMessage != null) {
                 item {
                     Text(
@@ -261,7 +257,6 @@ fun CrearMascotaScreen(
                 }
             }
 
-            // BOTONES
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),

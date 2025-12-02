@@ -40,7 +40,6 @@ fun HomeProfesionalScreen() {
     val ctx = androidx.compose.ui.platform.LocalContext.current
     val scope = rememberCoroutineScope()
 
-    // ====== SESIÓN Y PROFESIONAL ======
     val emailSesion = remember { SesionManager.obtenerEmail(ctx) }
     var profesional by remember { mutableStateOf<Profesional?>(null) }
 
@@ -50,12 +49,10 @@ fun HomeProfesionalScreen() {
 
     val rutProfesional = profesional?.rut
 
-    // ====== FECHA DE HOY ======
     val hoy = remember {
         SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
     }
 
-    // ====== RESERVAS HOY ======
     var reservasUi by remember { mutableStateOf<List<ReservaUi>>(emptyList()) }
     var cargando by remember { mutableStateOf(true) }
 
@@ -73,7 +70,7 @@ fun HomeProfesionalScreen() {
                 ReservaUi(
                     id = r.id,
                     hora = r.hora,
-                    paciente = r.clienteRut,   // ahora compila
+                    paciente = r.clienteRut,
                     servicio = r.servicio,
                     mascota = "—",
                     estado = estadoEnum
@@ -86,7 +83,6 @@ fun HomeProfesionalScreen() {
     }
 
 
-    // ====== FILTRO POR ESTADO ======
     val opciones = listOf("TODAS", "PENDIENTE", "REALIZADA", "CANCELADA")
     var filtroSeleccionado by rememberSaveable { mutableStateOf(opciones.first()) }
     var dropdownAbierto by remember { mutableStateOf(false) }
@@ -96,7 +92,6 @@ fun HomeProfesionalScreen() {
         else reservasUi.filter { it.estado.name == filtroSeleccionado }
     }
 
-    // ====== SELECCIÓN / DIÁLOGOS ======
     var mostrarDialogRegistrar by remember { mutableStateOf(false) }
     var mostrarDialogDetalle by remember { mutableStateOf(false) }
     var reservaSel by remember { mutableStateOf<ReservaUi?>(null) }
@@ -105,7 +100,6 @@ fun HomeProfesionalScreen() {
     val horaSel = reservaSel?.hora ?: "—"
     val servicioSel = reservaSel?.servicio ?: "—"
 
-    // ====== COLORES ======
     val colorPrincipal = Color(0xFF00AAB0)
     val colorFondoCampo = Color(0xFFF7FCFC)
     val textFieldColors = TextFieldDefaults.colors(
@@ -136,7 +130,6 @@ fun HomeProfesionalScreen() {
                 .padding(innerPadding),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Filtro por estado
             ExposedDropdownMenuBox(
                 expanded = dropdownAbierto,
                 onExpandedChange = { dropdownAbierto = !dropdownAbierto },
@@ -171,7 +164,6 @@ fun HomeProfesionalScreen() {
                 }
             }
 
-            // Lista de reservas
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -305,7 +297,6 @@ fun HomeProfesionalScreen() {
         }
     }
 
-    // ====== DIALOGOS ======
 
     if (mostrarDialogRegistrar && reservaSel != null) {
         RegistrarAtencionFormDialog(

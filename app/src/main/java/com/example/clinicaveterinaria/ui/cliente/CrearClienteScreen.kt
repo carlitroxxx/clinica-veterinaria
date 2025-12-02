@@ -39,10 +39,8 @@ fun CrearClienteRoute(nav: NavHostController) {
         onGuardar = { c ->
             scope.launch {
                 error = null
-                // AQUÍ EL CAMBIO: usar agregarCliente
                 val res = Repository.agregarCliente(c)
                 if (res.ok) {
-                    // Cliente creado en el backend → vamos a registrar la mascota
                     nav.navigate("clienteAgregarMascota/${c.rut}") {
                         popUpTo("login") { inclusive = true }
                     }
@@ -73,7 +71,6 @@ fun CrearClienteScreen(
     var showPass by rememberSaveable { mutableStateOf(false) }
     var showPass2 by rememberSaveable { mutableStateOf(false) }
 
-    // Validaciones
     val rutOk = RutUtils.rutEsValido(rut)
     val nombresOk = nombres.trim().isNotEmpty()
     val apellidosOk = apellidos.trim().isNotEmpty()

@@ -59,7 +59,6 @@ fun CrearProfesionalRoute(nav: NavHostController) {
     )
 }
 
-// Pantalla de Crear Profesional
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CrearProfesionalScreen(
