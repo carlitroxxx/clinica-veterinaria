@@ -1,4 +1,3 @@
-// data/Repository.kt
 package com.example.clinicaveterinaria.data
 
 import com.example.clinicaveterinaria.model.Cliente
@@ -15,14 +14,12 @@ object Repository {
 
     private val api: BackendApi = ApiClient.backendApi
 
-    // Resultado genérico para operaciones que pueden fallar
     data class Resultado<out T>(
         val ok: Boolean,
         val data: T? = null,
         val mensaje: String? = null
     )
 
-    // ========= TIPOS ANIMAL (ya lo tenías) =========
 
     suspend fun obtenerTiposAnimalDesdeApi(): List<String> {
         return try {
@@ -32,7 +29,6 @@ object Repository {
         }
     }
 
-    // ========= PROFESIONALES =========
 
     suspend fun obtenerProfesionales(): List<Profesional> {
         return try {
@@ -79,7 +75,6 @@ object Repository {
     }
 
     suspend fun validarProfesional(email: String, password: String): Boolean {
-        // Mientras no usemos /auth/login para profesionales, hacemos esto simple:
         if (email.isBlank() || password.isBlank()) return false
         val profesionales = obtenerProfesionales()
         return profesionales.any {
@@ -87,7 +82,6 @@ object Repository {
         }
     }
 
-    // ========= CLIENTES =========
 
     suspend fun agregarCliente(c: Cliente): Resultado<Cliente> {
         return try {
@@ -107,14 +101,13 @@ object Repository {
         }
     }
 
-    // ========= MASCOTAS =========
 
     suspend fun agregarMascota(form: MascotaForm): Resultado<Unit> {
         if (form.clienteRut.isBlank() || form.nombre.isBlank() || form.especie.isBlank()) {
             return Resultado(false, mensaje = "Faltan campos obligatorios")
         }
         return try {
-            api.crearMascota(form)  // Ignoramos el cuerpo, solo nos importa que no falle
+            api.crearMascota(form)
             Resultado(ok = true)
         } catch (e: Exception) {
             Resultado(ok = false, mensaje = e.message ?: "No se pudo guardar la mascota")
@@ -130,7 +123,6 @@ object Repository {
         }
     }
 
-    // ========= RESERVAS =========
 
     suspend fun agregarReserva(
         clienteRut: String,
@@ -187,7 +179,6 @@ object Repository {
         }
     }
 
-    // ========= PROFESIONAL extra =========
 
     suspend fun obtenerProfesionalPorEmail(email: String): Profesional? {
         if (email.isBlank()) return null
@@ -198,7 +189,6 @@ object Repository {
         }
     }
 
-// ========= RESERVAS para profesional =========
 
     suspend fun obtenerReservasProfesionalEn(
         rutProfesional: String,

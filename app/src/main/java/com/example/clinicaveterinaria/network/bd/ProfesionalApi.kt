@@ -1,4 +1,3 @@
-// network/bd/ProfesionalApi.kt
 package com.example.clinicaveterinaria.network.bd
 
 import com.example.clinicaveterinaria.model.Profesional
@@ -28,7 +27,6 @@ interface ProfesionalApi {
     @DELETE("profesionales/{rut}")
     suspend fun eliminarProfesional(@Path("rut") rut: String)
 
-    // Ejemplo de login profesional
     data class LoginProfesionalResponse(val ok: Boolean, val token: String?)
 
     @FormUrlEncoded

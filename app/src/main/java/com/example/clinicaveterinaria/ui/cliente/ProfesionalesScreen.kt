@@ -1,4 +1,3 @@
-// ProfesionalesScreen.kt
 package com.example.clinicaveterinaria.ui.cliente
 
 import androidx.compose.foundation.Image
@@ -20,7 +19,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.clinicaveterinaria.R
 
-// 🔹 Modelo SOLO para la UI (no tiene password)
 data class ProfesionalUi(
     val rut: String,
     val nombres: String,
