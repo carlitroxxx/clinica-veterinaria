@@ -11,12 +11,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material3.*
 import androidx.compose.material3.rememberDatePickerState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -30,19 +26,47 @@ import com.example.clinicaveterinaria.R
 import com.example.clinicaveterinaria.data.Repository
 import com.example.clinicaveterinaria.model.Profesional
 import com.example.clinicaveterinaria.util.RutUtils
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
 
+@Composable
+fun CrearProfesionalRoute(nav: NavHostController) {
+    val scope = rememberCoroutineScope()
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var isLoading by remember { mutableStateOf(false) }
 
+    CrearProfesionalScreen(
+        onGuardar = { p ->
+            scope.launch {
+                isLoading = true
+                errorMessage = null
+                val res = Repository.agregarProfesional(p)
+                isLoading = false
+
+                if (res.ok) {
+                    nav.popBackStack()
+                } else {
+                    errorMessage = res.mensaje ?: "No se pudo guardar el profesional"
+                }
+            }
+        },
+        onCancelar = { nav.popBackStack() },
+        errorMessage = errorMessage,
+        isLoading = isLoading
+    )
+}
 
 // Pantalla de Crear Profesional
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CrearProfesionalScreen(
     onGuardar: (Profesional) -> Unit,
-    onCancelar: () -> Unit
+    onCancelar: () -> Unit,
+    errorMessage: String? = null,
+    isLoading: Boolean = false
 ) {
     var rut by rememberSaveable { mutableStateOf("") }
     var nombres by rememberSaveable { mutableStateOf("") }
@@ -65,7 +89,7 @@ fun CrearProfesionalScreen(
     val passwordOk = password.length in 4..20
 
     val formOk = rutOk && nombresOk && apellidosOk && generoOk && fechaOk &&
-            especialidadOk && emailOk && telefonoOk && passwordOk
+            especialidadOk && emailOk && telefonoOk && passwordOk && !isLoading
 
     val colorPrincipal = Color(0xFF00AAB0)
     val colorFondoCampo = Color(0xFFF7FCFC)
@@ -130,7 +154,8 @@ fun CrearProfesionalScreen(
                         if (rut.isNotEmpty() && !rutOk) Text("RUT no válido")
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    colors = fieldColors
+                    colors = fieldColors,
+                    enabled = !isLoading
                 )
             }
             item {
@@ -142,7 +167,8 @@ fun CrearProfesionalScreen(
                         if (nombres.isNotEmpty() && !nombresOk) Text("Ingresa tus nombres")
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    colors = fieldColors
+                    colors = fieldColors,
+                    enabled = !isLoading
                 )
             }
             item {
@@ -154,12 +180,16 @@ fun CrearProfesionalScreen(
                         if (apellidos.isNotEmpty() && !apellidosOk) Text("Ingresa tus apellidos")
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    colors = fieldColors
+                    colors = fieldColors,
+                    enabled = !isLoading
                 )
             }
             item {
                 var openGenero by remember { mutableStateOf(false) }
-                ExposedDropdownMenuBox(expanded = openGenero, onExpandedChange = { openGenero = it }) {
+                ExposedDropdownMenuBox(
+                    expanded = openGenero,
+                    onExpandedChange = { if (!isLoading) openGenero = it }
+                ) {
                     OutlinedTextField(
                         value = genero,
                         onValueChange = {},
@@ -170,11 +200,21 @@ fun CrearProfesionalScreen(
                         modifier = Modifier
                             .menuAnchor()
                             .fillMaxWidth(),
-                        colors = fieldColors
+                        colors = fieldColors,
+                        enabled = !isLoading
                     )
-                    ExposedDropdownMenu(expanded = openGenero, onDismissRequest = { openGenero = false }) {
+                    ExposedDropdownMenu(
+                        expanded = openGenero,
+                        onDismissRequest = { openGenero = false }
+                    ) {
                         listOf("Masculino", "Femenino", "Otro").forEach {
-                            DropdownMenuItem(text = { Text(it) }, onClick = { genero = it; openGenero = false })
+                            DropdownMenuItem(
+                                text = { Text(it) },
+                                onClick = {
+                                    genero = it
+                                    openGenero = false
+                                }
+                            )
                         }
                     }
                 }
@@ -191,19 +231,22 @@ fun CrearProfesionalScreen(
                         singleLine = true,
                         readOnly = true,
                         trailingIcon = {
-                            IconButton(onClick = { showDatePicker = true }) {
+                            IconButton(
+                                onClick = { if (!isLoading) showDatePicker = true },
+                            ) {
                                 Icon(Icons.Outlined.DateRange, contentDescription = "Elegir fecha")
                             }
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        colors = fieldColors
+                        colors = fieldColors,
+                        enabled = !isLoading
                     )
 
                     Box(
                         Modifier
                             .matchParentSize()
                             .padding(top = 9.dp, end = 48.dp)
-                            .clickable { showDatePicker = true }
+                            .clickable(enabled = !isLoading) { showDatePicker = true }
                     )
                 }
 
@@ -240,7 +283,8 @@ fun CrearProfesionalScreen(
                     label = { Text("Especialidad") }, singleLine = true,
                     isError = !especialidadOk && especialidad.isNotEmpty(),
                     modifier = Modifier.fillMaxWidth(),
-                    colors = fieldColors
+                    colors = fieldColors,
+                    enabled = !isLoading
                 )
             }
             item {
@@ -253,7 +297,8 @@ fun CrearProfesionalScreen(
                         if (email.isNotEmpty() && !emailOk) Text("Email no válido")
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    colors = fieldColors
+                    colors = fieldColors,
+                    enabled = !isLoading
                 )
             }
             item {
@@ -266,7 +311,8 @@ fun CrearProfesionalScreen(
                         if (telefono.isNotEmpty() && !telefonoOk) Text("Usa de 8 a 12 dígitos")
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    colors = fieldColors
+                    colors = fieldColors,
+                    enabled = !isLoading
                 )
             }
             item {
@@ -282,8 +328,19 @@ fun CrearProfesionalScreen(
                         if (password.isNotEmpty() && !passwordOk) Text("4 a 20 caracteres")
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    colors = fieldColors
+                    colors = fieldColors,
+                    enabled = !isLoading
                 )
+            }
+
+            if (errorMessage != null) {
+                item {
+                    Text(
+                        text = errorMessage,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
             }
 
             item {
@@ -297,12 +354,13 @@ fun CrearProfesionalScreen(
                     OutlinedButton(
                         onClick = onCancelar,
                         modifier = Modifier.weight(1f),
+                        enabled = !isLoading,
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = colorPrincipal),
-                        border = ButtonDefaults.outlinedButtonBorder.copy(brush = SolidColor(
-                            colorPrincipal
-                        )
+                        border = ButtonDefaults.outlinedButtonBorder.copy(
+                            brush = SolidColor(colorPrincipal)
                         )
                     ) { Text("Cancelar") }
+
                     Button(
                         onClick = {
                             onGuardar(
@@ -322,7 +380,9 @@ fun CrearProfesionalScreen(
                         modifier = Modifier.weight(1f),
                         enabled = formOk,
                         colors = ButtonDefaults.buttonColors(containerColor = colorPrincipal)
-                    ) { Text("Guardar") }
+                    ) {
+                        Text(if (isLoading) "Guardando..." else "Guardar")
+                    }
                 }
             }
         }

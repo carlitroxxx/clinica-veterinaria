@@ -1,4 +1,3 @@
-// network/BackendApi.kt
 package com.example.clinicaveterinaria.network
 
 import com.example.clinicaveterinaria.model.Cliente
@@ -13,8 +12,8 @@ import retrofit2.http.PUT
 import retrofit2.http.Path
 import retrofit2.http.Query
 
-// ==== DTOs simples para requests ====
-
+// Si ya los tienes en otro archivo, NO los dupliques.
+// Déjalos solo una vez.
 data class CrearReservaRequest(
     val clienteRut: String,
     val profesionalRut: String,
@@ -27,107 +26,126 @@ data class EstadoReservaRequest(
     val estadoNuevo: String
 )
 
-data class LoginRequest(
-    val email: String,
-    val password: String,
-    val tipo: String // "CLIENTE" o "PROFESIONAL"
-)
-
-data class LoginResponse(
-    val token: String,
-    val tipo: String
-)
-
 interface BackendApi {
 
-    // ========= AUTH =========
+    // ========== CLIENTES ==========
 
-    @POST("auth/login")
-    suspend fun login(@Body request: LoginRequest): LoginResponse
+    @POST("clientes")
+    suspend fun crearCliente(
+        @Body cliente: Cliente
+    ): Cliente
+
+    @GET("clientes/email/{email}")
+    suspend fun getClientePorEmail(
+        @Path("email") email: String
+    ): Cliente
+
+    // (Opcionales, por si los quieres usar después)
+    @GET("clientes")
+    suspend fun getClientes(): List<Cliente>
+
+    @GET("clientes/{rut}")
+    suspend fun getClientePorRut(
+        @Path("rut") rut: String
+    ): Cliente
+
+    @PUT("clientes/{rut}")
+    suspend fun actualizarCliente(
+        @Path("rut") rut: String,
+        @Body cliente: Cliente
+    ): Cliente
+
+    @DELETE("clientes/{rut}")
+    suspend fun eliminarCliente(
+        @Path("rut") rut: String
+    )
 
 
-    // ========= PROFESIONALES =========
-    // @RequestMapping("/api/profesionales")
+    // ========== PROFESIONALES ==========
 
-    @GET("api/profesionales")
+    @GET("profesionales")
     suspend fun getProfesionales(): List<Profesional>
 
-    @GET("api/profesionales/{rut}")
-    suspend fun getProfesional(@Path("rut") rut: String): Profesional?
+    @GET("profesionales/{rut}")
+    suspend fun getProfesional(
+        @Path("rut") rut: String
+    ): Profesional
 
-    @GET("api/profesionales/email/{email}")
-    suspend fun getProfesionalPorEmail(@Path("email") email: String): Profesional?
+    @GET("profesionales/email/{email}")
+    suspend fun getProfesionalPorEmail(
+        @Path("email") email: String
+    ): Profesional
 
-    @POST("api/profesionales")
-    suspend fun createProfesional(@Body profesional: Profesional): Profesional
+    @POST("profesionales")
+    suspend fun createProfesional(
+        @Body profesional: Profesional
+    ): Profesional
 
-    @PUT("api/profesionales/{rut}")
+    @PUT("profesionales/{rut}")
     suspend fun updateProfesional(
         @Path("rut") rut: String,
         @Body profesional: Profesional
     ): Profesional
 
-    @DELETE("api/profesionales/{rut}")
-    suspend fun deleteProfesional(@Path("rut") rut: String)
+    @DELETE("profesionales/{rut}")
+    suspend fun deleteProfesional(
+        @Path("rut") rut: String
+    )
 
 
-    // ========= CLIENTES =========
-    // @RequestMapping("/api/clientes")
+    // ========== MASCOTAS ==========
 
-    @GET("api/clientes/email/{email}")
-    suspend fun getClientePorEmail(@Path("email") email: String): Cliente?
+    // Usamos MascotaForm como body porque tu Repository ya lo llama así.
+    // En backend tienes MascotaRequest, pero mientras los campos se llamen igual, funciona.
+    @POST("mascotas")
+    suspend fun crearMascota(
+        @Body request: MascotaForm
+    )
 
-    @POST("api/clientes")
-    suspend fun crearCliente(@Body cliente: Cliente): Cliente
+    @GET("mascotas/cliente/{rutCliente}/tiene")
+    suspend fun clienteTieneMascota(
+        @Path("rutCliente") rutCliente: String
+    ): Boolean
 
-
-    // ========= MASCOTAS =========
-    // @RequestMapping("/api/mascotas")
-
-    // Tu backend recibe MascotaRequest, pero mientras los campos coincidan
-    // con MascotaForm (clienteRut, nombre, especie, raza, sexo, fechaNacimiento),
-    // Retrofit lo serializa igual.
-    @POST("api/mascotas")
-    suspend fun crearMascota(@Body mascota: MascotaForm): Any
-
-    @GET("api/mascotas/cliente/{rutCliente}/tiene")
-    suspend fun clienteTieneMascota(@Path("rutCliente") rutCliente: String): Boolean
+    // (Opcional, por si luego quieres listar las mascotas)
+    @GET("mascotas/cliente/{rutCliente}")
+    suspend fun getMascotasPorCliente(
+        @Path("rutCliente") rutCliente: String
+    ): List<Any> // cámbialo a tu modelo Mascota cuando lo agregues al frontend
 
 
-    // ========= RESERVAS =========
-    // @RequestMapping("/api/reservas")
+    // ========== RESERVAS ==========
 
-    @GET("api/reservas/cliente/{rutCliente}")
+    @POST("reservas")
+    suspend fun crearReserva(
+        @Body request: CrearReservaRequest
+    ): Reserva
+
+    @GET("reservas/cliente/{rutCliente}")
     suspend fun getReservasCliente(
         @Path("rutCliente") rutCliente: String
     ): List<Reserva>
 
-    @POST("api/reservas")
-    suspend fun crearReserva(@Body body: CrearReservaRequest): Reserva
+    @GET("reservas/profesional/{rutProfesional}")
+    suspend fun getReservasProfesionalEn(
+        @Path("rutProfesional") rutProfesional: String,
+        @Query("fecha") fecha: String
+    ): List<Reserva>
 
-    // DELETE /api/reservas/{idReserva}
-    @DELETE("api/reservas/{idReserva}")
-    suspend fun cancelarReserva(@Path("idReserva") idReserva: Long)
-
-    // GET /api/reservas/profesional/{rutProfesional}/disponibles?fecha=YYYY-MM-DD
-    @GET("api/reservas/profesional/{rutProfesional}/disponibles")
+    @GET("reservas/profesional/{rutProfesional}/disponibles")
     suspend fun getHorasDisponibles(
         @Path("rutProfesional") rutProfesional: String,
         @Query("fecha") fecha: String
     ): List<String>
 
-    // Opcional pero útil para la agenda del profesional:
-    // GET /api/reservas/profesional/{rutProfesional}?fecha=YYYY-MM-DD
-    @GET("api/reservas/profesional/{rutProfesional}")
-    suspend fun getReservasProfesionalEnFecha(
-        @Path("rutProfesional") rutProfesional: String,
-        @Query("fecha") fecha: String
-    ): List<Reserva>
-
-    // PUT /api/reservas/{idReserva}/estado
-    @PUT("api/reservas/{idReserva}/estado")
+    @PUT("reservas/{idReserva}/estado")
     suspend fun actualizarEstadoReserva(
         @Path("idReserva") idReserva: Long,
         @Body body: EstadoReservaRequest
-    ): Any
+    )
+
+    @DELETE("reservas/{idReserva}")
+    suspend fun cancelarReserva(
+        @Path("idReserva") idReserva: Long
+    )
 }

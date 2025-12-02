@@ -3,8 +3,8 @@ package com.example.clinicaveterinaria.ui.profesional
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
@@ -30,6 +30,7 @@ import androidx.navigation.NavHostController
 import com.example.clinicaveterinaria.data.Repository
 import com.example.clinicaveterinaria.data.SesionManager
 import com.example.clinicaveterinaria.model.Profesional
+import kotlinx.coroutines.launch
 
 data class PerfilUi(
     val nombres: String,
@@ -40,47 +41,40 @@ data class PerfilUi(
     val password: String? = null
 )
 
-
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PerfilProfesionalScreen(nav: NavHostController) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
     val emailSesion = remember { SesionManager.obtenerEmail(context) }
     val tipoSesion = remember { SesionManager.obtenerTipo(context) }
 
+    // Si no es profesional logueado, mandar a login
     LaunchedEffect(emailSesion, tipoSesion) {
         if (emailSesion == null || tipoSesion != "profesional") {
             nav.navigate("login") { popUpTo(0) { inclusive = true } }
         }
     }
 
-    val prof: Profesional = remember(Repository.profesionales, emailSesion) {
-        Repository.profesionales.firstOrNull { it.email.equals(emailSesion ?: "", ignoreCase = true) }
-    } ?: run {
-        LaunchedEffect(Unit) {
-            SesionManager.cerrarSesion(context)
-            nav.navigate("login") { popUpTo(0) { inclusive = true } }
+    var profesional by remember { mutableStateOf<Profesional?>(null) }
+    var cargando by remember { mutableStateOf(true) }
+    var errorCarga by remember { mutableStateOf<String?>(null) }
+
+    // Cargar datos del profesional desde el backend
+    LaunchedEffect(emailSesion) {
+        if (emailSesion.isNullOrBlank()) {
+            cargando = false
+            return@LaunchedEffect
         }
-        return
+        cargando = true
+        errorCarga = null
+        profesional = Repository.obtenerProfesionalPorEmail(emailSesion)
+        if (profesional == null) {
+            errorCarga = "No se pudo cargar el perfil del profesional."
+        }
+        cargando = false
     }
-
-    var editando by rememberSaveable { mutableStateOf(false) }
-
-    var nombres by rememberSaveable { mutableStateOf(prof.nombres) }
-    var apellidos by rememberSaveable { mutableStateOf(prof.apellidos) }
-    var email by rememberSaveable { mutableStateOf(prof.email) }
-    var telefono by rememberSaveable { mutableStateOf(prof.telefono) }
-    var especialidad by rememberSaveable { mutableStateOf(prof.especialidad) }
-
-    var pass by rememberSaveable { mutableStateOf("") }
-    var pass2 by rememberSaveable { mutableStateOf("") }
-    var showPass by rememberSaveable { mutableStateOf(false) }
-
-    val passTouched = pass.isNotEmpty() || pass2.isNotEmpty()
-    val passLenOk = (!passTouched) || (pass.length >= 4 && pass2.length >= 4)
-    val passMatchOk = (!passTouched) || (pass == pass2)
-    val passValid = passLenOk && passMatchOk
 
     val colorPrincipal = Color(0xFF00AAB0)
     val colorFondoCampo = Color(0xFFF7FCFC)
@@ -89,12 +83,45 @@ fun PerfilProfesionalScreen(nav: NavHostController) {
         unfocusedBorderColor = colorPrincipal,
         focusedBorderColor = colorPrincipal,
         focusedLabelColor = colorPrincipal,
-
         disabledContainerColor = colorFondoCampo,
         disabledBorderColor = colorPrincipal.copy(alpha = 0.75f),
         disabledLabelColor = colorPrincipal.copy(alpha = 0.75f),
         disabledTextColor = MaterialTheme.colorScheme.onSurface
     )
+
+    // Estados de edición (se inicializan cuando ya tenemos profesional)
+    var editando by rememberSaveable { mutableStateOf(false) }
+    var nombres by rememberSaveable { mutableStateOf("") }
+    var apellidos by rememberSaveable { mutableStateOf("") }
+    var email by rememberSaveable { mutableStateOf("") }
+    var telefono by rememberSaveable { mutableStateOf("") }
+    var especialidad by rememberSaveable { mutableStateOf("") }
+
+    var pass by rememberSaveable { mutableStateOf("") }
+    var pass2 by rememberSaveable { mutableStateOf("") }
+    var showPass by rememberSaveable { mutableStateOf(false) }
+
+    var mensajeErrorUpdate by remember { mutableStateOf<String?>(null) }
+
+    // Cuando cambia el profesional (se carga desde backend), poblar campos
+    LaunchedEffect(profesional?.rut) {
+        profesional?.let { p ->
+            nombres = p.nombres
+            apellidos = p.apellidos
+            email = p.email
+            telefono = p.telefono
+            especialidad = p.especialidad
+            pass = ""
+            pass2 = ""
+            editando = false
+            mensajeErrorUpdate = null
+        }
+    }
+
+    val passTouched = pass.isNotEmpty() || pass2.isNotEmpty()
+    val passLenOk = (!passTouched) || (pass.length >= 4 && pass2.length >= 4)
+    val passMatchOk = (!passTouched) || (pass == pass2)
+    val passValid = passLenOk && passMatchOk
 
     Scaffold(
         topBar = {
@@ -112,10 +139,12 @@ fun PerfilProfesionalScreen(nav: NavHostController) {
                     }
                 },
                 actions = {
-                    if (!editando) {
+                    if (!editando && !cargando && profesional != null) {
                         TextButton(
                             onClick = { editando = true },
-                            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onPrimary)
+                            colors = ButtonDefaults.textButtonColors(
+                                contentColor = MaterialTheme.colorScheme.onPrimary
+                            )
                         ) { Text("Editar") }
                     }
                 },
@@ -128,220 +157,290 @@ fun PerfilProfesionalScreen(nav: NavHostController) {
             )
         }
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .padding(paddingValues)
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Spacer(Modifier.height(8.dp))
 
-            Icon(
-                imageVector = Icons.Default.AccountCircle,
-                contentDescription = "Avatar",
-                modifier = Modifier
-                    .size(96.dp)
-                    .clip(RoundedCornerShape(48.dp))
-                    .background(colorFondoCampo),
-                tint = colorPrincipal
-            )
+        when {
+            cargando -> {
+                // Pantalla de carga
+                Box(
+                    modifier = Modifier
+                        .padding(paddingValues)
+                        .fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = colorPrincipal)
+                }
+            }
 
-            Spacer(Modifier.height(8.dp))
-
-            Text(
-                text = "${nombres.ifBlank { "Nombre" }} ${apellidos.ifBlank { "Apellido" }}".trim(),
-                style = MaterialTheme.typography.headlineSmall
-            )
-            Text(
-                text = email.ifBlank { "email@ejemplo.com" },
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Spacer(Modifier.height(16.dp))
-
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = colorFondoCampo)
-            ) {
-                Column(Modifier.padding(16.dp)) {
-                    CampoPerfil(
-                        label = "Nombres",
-                        value = nombres,
-                        onValueChange = { nombres = it },
-                        enabled = editando,
-                        colors = fieldColors
+            profesional == null -> {
+                // No se pudo cargar el profesional
+                Column(
+                    modifier = Modifier
+                        .padding(paddingValues)
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = errorCarga ?: "No se encontró información del profesional.",
+                        color = MaterialTheme.colorScheme.error
                     )
-                    CampoPerfil(
-                        label = "Apellidos",
-                        value = apellidos,
-                        onValueChange = { apellidos = it },
-                        enabled = editando,
-                        colors = fieldColors
-                    )
-                    CampoPerfil(
-                        label = "Email",
-                        value = email,
-                        onValueChange = { email = it },
-                        enabled = editando,
-                        keyboardType = KeyboardType.Email,
-                        colors = fieldColors
-                    )
-                    CampoPerfil(
-                        label = "Teléfono",
-                        value = telefono,
-                        onValueChange = { telefono = it },
-                        enabled = editando,
-                        keyboardType = KeyboardType.Phone,
-                        colors = fieldColors
-                    )
-                    CampoPerfil(
-                        label = "Especialidad",
-                        value = especialidad,
-                        onValueChange = { especialidad = it },
-                        enabled = editando,
-                        placeholder = "Opcional",
-                        colors = fieldColors
-                    )
-
-                    if (editando) {
-                        Spacer(Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = pass,
-                            onValueChange = { pass = it },
-                            label = { Text("Contraseña") },
-                            singleLine = true,
-                            visualTransformation = if (showPass) VisualTransformation.None else PasswordVisualTransformation(),
-                            trailingIcon = {
-                                IconButton(onClick = { showPass = !showPass }) {
-                                    Icon(
-                                        imageVector = if (showPass) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
-                                        contentDescription = if (showPass) "Ocultar" else "Mostrar"
-                                    )
-                                }
-                            },
-                            isError = !passLenOk,
-                            supportingText = {
-                                if (!passLenOk) Text("Mínimo 4 caracteres")
-                                else Text("Deja vacío para no cambiar")
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = fieldColors
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = pass2,
-                            onValueChange = { pass2 = it },
-                            label = { Text("Confirmar contraseña") },
-                            singleLine = true,
-                            visualTransformation = if (showPass) VisualTransformation.None else PasswordVisualTransformation(),
-                            isError = !passMatchOk,
-                            supportingText = {
-                                if (!passMatchOk) Text("Las contraseñas no coinciden")
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = fieldColors
-                        )
+                    Spacer(Modifier.height(12.dp))
+                    Button(
+                        onClick = {
+                            SesionManager.cerrarSesion(context)
+                            nav.navigate("login") { popUpTo(0) { inclusive = true } }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = colorPrincipal)
+                    ) {
+                        Text("Volver a iniciar sesión")
                     }
                 }
             }
 
-            Spacer(Modifier.height(16.dp))
-
-            if (editando) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+            else -> {
+                // Perfil cargado OK
+                Column(
+                    modifier = Modifier
+                        .padding(paddingValues)
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    OutlinedButton(
-                        onClick = {
-                            nombres = prof.nombres
-                            apellidos = prof.apellidos
-                            email = prof.email
-                            telefono = prof.telefono
-                            especialidad = prof.especialidad
-                            pass = ""
-                            pass2 = ""
-                            editando = false
-                        },
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = colorPrincipal),
-                        border = ButtonDefaults.outlinedButtonBorder.copy(brush = SolidColor(colorPrincipal))
-                    ) { Text("Cancelar") }
+                    Spacer(Modifier.height(8.dp))
 
-                    Spacer(Modifier.width(12.dp))
+                    Icon(
+                        imageVector = Icons.Default.AccountCircle,
+                        contentDescription = "Avatar",
+                        modifier = Modifier
+                            .size(96.dp)
+                            .clip(RoundedCornerShape(48.dp))
+                            .background(colorFondoCampo),
+                        tint = colorPrincipal
+                    )
 
-                    Button(
-                        onClick = {
-                            val actualizado: Profesional = prof.copy(
-                                nombres = nombres.trim(),
-                                apellidos = apellidos.trim(),
-                                email = email.trim(),
-                                telefono = telefono.trim(),
-                                especialidad = especialidad.trim().ifEmpty { prof.especialidad },
-                                password = if (passTouched) pass else prof.password
+                    Spacer(Modifier.height(8.dp))
+
+                    Text(
+                        text = "${nombres.ifBlank { "Nombre" }} ${apellidos.ifBlank { "Apellido" }}".trim(),
+                        style = MaterialTheme.typography.headlineSmall
+                    )
+                    Text(
+                        text = email.ifBlank { "email@ejemplo.com" },
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Spacer(Modifier.height(16.dp))
+
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = colorFondoCampo)
+                    ) {
+                        Column(Modifier.padding(16.dp)) {
+                            CampoPerfil(
+                                label = "Nombres",
+                                value = nombres,
+                                onValueChange = { nombres = it },
+                                enabled = editando,
+                                colors = fieldColors
+                            )
+                            CampoPerfil(
+                                label = "Apellidos",
+                                value = apellidos,
+                                onValueChange = { apellidos = it },
+                                enabled = editando,
+                                colors = fieldColors
+                            )
+                            CampoPerfil(
+                                label = "Email",
+                                value = email,
+                                onValueChange = { email = it },
+                                enabled = editando,
+                                keyboardType = KeyboardType.Email,
+                                colors = fieldColors
+                            )
+                            CampoPerfil(
+                                label = "Teléfono",
+                                value = telefono,
+                                onValueChange = { telefono = it },
+                                enabled = editando,
+                                keyboardType = KeyboardType.Phone,
+                                colors = fieldColors
+                            )
+                            CampoPerfil(
+                                label = "Especialidad",
+                                value = especialidad,
+                                onValueChange = { especialidad = it },
+                                enabled = editando,
+                                placeholder = "Opcional",
+                                colors = fieldColors
                             )
 
-                            Repository.actualizarProfesional(actualizado)
-
-                            val tokenActual = SesionManager.obtenerToken(context)
-
-                            if (tokenActual != null &&
-                                !actualizado.email.equals(emailSesion ?: "", ignoreCase = true)
-                            ) {
-                                SesionManager.iniciarSesion(
-                                    context,
-                                    actualizado.email,
-                                    "profesional",
-                                    tokenActual
+                            if (editando) {
+                                Spacer(Modifier.height(8.dp))
+                                OutlinedTextField(
+                                    value = pass,
+                                    onValueChange = { pass = it },
+                                    label = { Text("Contraseña") },
+                                    singleLine = true,
+                                    visualTransformation = if (showPass) VisualTransformation.None
+                                    else PasswordVisualTransformation(),
+                                    trailingIcon = {
+                                        IconButton(onClick = { showPass = !showPass }) {
+                                            Icon(
+                                                imageVector = if (showPass)
+                                                    Icons.Filled.VisibilityOff
+                                                else Icons.Filled.Visibility,
+                                                contentDescription = if (showPass) "Ocultar" else "Mostrar"
+                                            )
+                                        }
+                                    },
+                                    isError = !passLenOk,
+                                    supportingText = {
+                                        if (!passLenOk) Text("Mínimo 4 caracteres")
+                                        else Text("Deja vacío para no cambiar")
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = fieldColors
+                                )
+                                Spacer(Modifier.height(8.dp))
+                                OutlinedTextField(
+                                    value = pass2,
+                                    onValueChange = { pass2 = it },
+                                    label = { Text("Confirmar contraseña") },
+                                    singleLine = true,
+                                    visualTransformation = if (showPass) VisualTransformation.None
+                                    else PasswordVisualTransformation(),
+                                    isError = !passMatchOk,
+                                    supportingText = {
+                                        if (!passMatchOk) Text("Las contraseñas no coinciden")
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = fieldColors
                                 )
                             }
-
-                            pass = ""
-                            pass2 = ""
-                            editando = false
-                        },
-                        enabled = passValid,
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(containerColor = colorPrincipal)
-                    ) {
-                        Text("Guardar")
+                        }
                     }
 
-                }
-            } else {
-                Column(Modifier.fillMaxWidth()) {
-                    Spacer(Modifier.height(8.dp))
-                    ElevatedCard(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(14.dp),
-                        onClick = {
-                            SesionManager.cerrarSesion(context)
-                            nav.navigate("login") { popUpTo(0) { inclusive = true } }
-                        }
-                    ) {
+                    mensajeErrorUpdate?.let {
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            text = it,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+
+                    Spacer(Modifier.height(16.dp))
+
+                    if (editando) {
                         Row(
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Icon(
-                                Icons.Filled.Logout,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.error
-                            )
+                            OutlinedButton(
+                                onClick = {
+                                    // Restaurar valores originales desde el profesional actual
+                                    profesional?.let { p ->
+                                        nombres = p.nombres
+                                        apellidos = p.apellidos
+                                        email = p.email
+                                        telefono = p.telefono
+                                        especialidad = p.especialidad
+                                    }
+                                    pass = ""
+                                    pass2 = ""
+                                    mensajeErrorUpdate = null
+                                    editando = false
+                                },
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = colorPrincipal),
+                                border = ButtonDefaults.outlinedButtonBorder.copy(brush = SolidColor(colorPrincipal))
+                            ) { Text("Cancelar") }
+
                             Spacer(Modifier.width(12.dp))
-                            Text(
-                                "Cerrar sesión",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.error
-                            )
+
+                            Button(
+                                onClick = {
+                                    val profActual = profesional ?: return@Button
+
+                                    val actualizado = profActual.copy(
+                                        nombres = nombres.trim(),
+                                        apellidos = apellidos.trim(),
+                                        email = email.trim(),
+                                        telefono = telefono.trim(),
+                                        especialidad = especialidad.trim().ifEmpty { profActual.especialidad },
+                                        password = if (passTouched) pass else profActual.password
+                                    )
+
+                                    scope.launch {
+                                        val res = Repository.actualizarProfesional(actualizado)
+                                        if (res.ok && res.data != null) {
+                                            profesional = res.data
+                                            mensajeErrorUpdate = null
+
+                                            val tokenActual = SesionManager.obtenerToken(context)
+                                            if (tokenActual != null &&
+                                                !actualizado.email.equals(emailSesion ?: "", ignoreCase = true)
+                                            ) {
+                                                SesionManager.iniciarSesion(
+                                                    context,
+                                                    actualizado.email,
+                                                    "profesional",
+                                                    tokenActual
+                                                )
+                                            }
+
+                                            pass = ""
+                                            pass2 = ""
+                                            editando = false
+                                        } else {
+                                            mensajeErrorUpdate = res.mensaje ?: "No se pudo actualizar el perfil."
+                                        }
+                                    }
+                                },
+                                enabled = passValid,
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.buttonColors(containerColor = colorPrincipal)
+                            ) {
+                                Text("Guardar")
+                            }
+                        }
+                    } else {
+                        Column(Modifier.fillMaxWidth()) {
+                            Spacer(Modifier.height(8.dp))
+                            ElevatedCard(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(14.dp),
+                                onClick = {
+                                    SesionManager.cerrarSesion(context)
+                                    nav.navigate("login") { popUpTo(0) { inclusive = true } }
+                                }
+                            ) {
+                                Row(
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        Icons.Filled.Logout,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.error
+                                    )
+                                    Spacer(Modifier.width(12.dp))
+                                    Text(
+                                        "Cerrar sesión",
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = MaterialTheme.colorScheme.error
+                                    )
+                                }
+                            }
                         }
                     }
                 }

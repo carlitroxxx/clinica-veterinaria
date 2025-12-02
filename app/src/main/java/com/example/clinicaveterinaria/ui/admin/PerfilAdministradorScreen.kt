@@ -1,23 +1,15 @@
 package com.example.clinicaveterinaria.ui.admin
 
-import android.text.format.DateFormat
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -31,37 +23,24 @@ import androidx.navigation.NavHostController
 import com.example.clinicaveterinaria.R
 import com.example.clinicaveterinaria.data.Repository
 import com.example.clinicaveterinaria.data.SesionManager
-import com.example.clinicaveterinaria.model.Profesional
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PerfilAdministradorScreen(nav: NavHostController) {
-
-    var listaProfesionales by remember { mutableStateOf<List<Profesional>>(emptyList()) }
-    var cargando by remember { mutableStateOf(true) }
-    var error by remember { mutableStateOf<String?>(null) }
-
-    val scope = rememberCoroutineScope()
-
-    LaunchedEffect(Unit) {
-        scope.launch {
-            try {
-                listaProfesionales = Repository.obtenerProfesionales()
-                error = null
-            } catch (e: Exception) {
-                error = "No se pudo cargar la lista."
-            }
-            cargando = false
-        }
-    }
-
     val context = LocalContext.current
-
     val email = SesionManager.obtenerEmail(context) ?: "admin@correo.cl"
 
+    // AHORA: se obtiene desde el backend (Repository.obtenerProfesionales())
+    var totalProfesionales by remember { mutableStateOf(0) }
 
-    val totalProfesionales = listaProfesionales.size
+    LaunchedEffect(Unit) {
+        try {
+            val lista = Repository.obtenerProfesionales()
+            totalProfesionales = lista.size
+        } catch (_: Exception) {
+            totalProfesionales = 0
+        }
+    }
 
     val colorPrincipal = Color(0xFF00AAB0)
     val colorFondoClaro = Color(0xFFF7FCFC)
@@ -111,7 +90,13 @@ fun PerfilAdministradorScreen(nav: NavHostController) {
                     .background(colorAvatarBg)
                     .padding(16.dp)
             )
-            Text("Administrador", fontSize = 22.sp, color = colorPrincipal, fontWeight = FontWeight.SemiBold)
+
+            Text(
+                "Administrador",
+                fontSize = 22.sp,
+                color = colorPrincipal,
+                fontWeight = FontWeight.SemiBold
+            )
 
             AssistChip(
                 onClick = { },
@@ -163,6 +148,7 @@ fun PerfilAdministradorScreen(nav: NavHostController) {
                     }
                 }
             }
+
             Spacer(Modifier.height(18.dp))
         }
     }

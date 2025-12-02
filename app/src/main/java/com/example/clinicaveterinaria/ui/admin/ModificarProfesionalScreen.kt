@@ -43,7 +43,9 @@ private fun parseDateToMillis(dateStr: String): Long? {
         val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
         sdf.timeZone = TimeZone.getTimeZone("UTC")
         sdf.parse(dateStr)?.time
-    } catch (_: Exception) { null }
+    } catch (_: Exception) {
+        null
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -145,7 +147,7 @@ fun ModificarProfesionalScreen(
                     label = { Text("RUT (no editable)") },
                     singleLine = true,
                     enabled = false,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
             item {
@@ -168,7 +170,10 @@ fun ModificarProfesionalScreen(
             }
 
             item {
-                ExposedDropdownMenuBox(expanded = openGenero, onExpandedChange = { openGenero = it }) {
+                ExposedDropdownMenuBox(
+                    expanded = openGenero,
+                    onExpandedChange = { openGenero = it }
+                ) {
                     OutlinedTextField(
                         value = genero,
                         onValueChange = {},
@@ -176,12 +181,23 @@ fun ModificarProfesionalScreen(
                         readOnly = true,
                         isError = !generoOk && genero.isNotEmpty(),
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = openGenero) },
-                        modifier = Modifier.menuAnchor().fillMaxWidth(),
+                        modifier = Modifier
+                            .menuAnchor()
+                            .fillMaxWidth(),
                         colors = fieldColors
                     )
-                    ExposedDropdownMenu(expanded = openGenero, onDismissRequest = { openGenero = false }) {
+                    ExposedDropdownMenu(
+                        expanded = openGenero,
+                        onDismissRequest = { openGenero = false }
+                    ) {
                         listOf("Masculino", "Femenino", "Otro").forEach {
-                            DropdownMenuItem(text = { Text(it) }, onClick = { genero = it; openGenero = false })
+                            DropdownMenuItem(
+                                text = { Text(it) },
+                                onClick = {
+                                    genero = it
+                                    openGenero = false
+                                }
+                            )
                         }
                     }
                 }
@@ -294,7 +310,7 @@ fun ModificarProfesionalScreen(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                     isError = !passwordOk && password.isNotEmpty(),
                     supportingText = {
-                        if (!passwordOk && password.isNotEmpty()) Text("Mínimo 4 caracteres")
+                        if (!passwordOk && password.isNotEmpty()) Text("4 a 20 caracteres")
                     },
                     modifier = Modifier.fillMaxWidth(),
                     colors = fieldColors
@@ -320,9 +336,8 @@ fun ModificarProfesionalScreen(
                         onClick = { onEliminar(profesional) },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                        border = ButtonDefaults.outlinedButtonBorder.copy(brush = SolidColor(
-                            MaterialTheme.colorScheme.error
-                        )
+                        border = ButtonDefaults.outlinedButtonBorder.copy(
+                            brush = SolidColor(MaterialTheme.colorScheme.error)
                         )
                     ) { Text("Eliminar") }
 

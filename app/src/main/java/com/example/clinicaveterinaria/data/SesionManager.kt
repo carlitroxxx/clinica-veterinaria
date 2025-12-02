@@ -1,47 +1,50 @@
+// data/SesionManager.kt
 package com.example.clinicaveterinaria.data
 
 import android.content.Context
+import android.content.SharedPreferences
 
 object SesionManager {
+
+    private const val PREFS_NAME = "sesion_prefs"
+    private const val KEY_EMAIL = "email"
+    private const val KEY_TIPO = "tipo"
+    private const val KEY_TOKEN = "token"
+
+    private fun prefs(context: Context): SharedPreferences =
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
     fun iniciarSesion(
         context: Context,
         email: String,
         tipo: String,
-        token: String = "" // 👈 valor por defecto para no romper llamadas antiguas
+        token: String? = null   // 👈 token opcional
     ) {
-        val prefs = context.getSharedPreferences("sesion", Context.MODE_PRIVATE)
-        prefs.edit()
-            .putString("email", email)
-            .putString("tipo", tipo)
-            .putString("token", token)
+        prefs(context).edit()
+            .putString(KEY_EMAIL, email)
+            .putString(KEY_TIPO, tipo.lowercase())   // 👈 normalizamos
+            .putString(KEY_TOKEN, token)
             .apply()
     }
 
-    fun obtenerEmail(context: Context): String? {
-        val prefs = context.getSharedPreferences("sesion", Context.MODE_PRIVATE)
-        return prefs.getString("email", null)
-    }
-
-    fun obtenerTipo(context: Context): String? {
-        val prefs = context.getSharedPreferences("sesion", Context.MODE_PRIVATE)
-        return prefs.getString("tipo", null)
-    }
-
-    fun obtenerToken(context: Context): String? {
-        val prefs = context.getSharedPreferences("sesion", Context.MODE_PRIVATE)
-        return prefs.getString("token", null)
+    fun cerrarSesion(context: Context) {
+        prefs(context).edit().clear().apply()
     }
 
     fun haySesionActiva(context: Context): Boolean {
-        val prefs = context.getSharedPreferences("sesion", Context.MODE_PRIVATE)
-        val email = prefs.getString("email", null)
-        val tipo = prefs.getString("tipo", null)
+        val p = prefs(context)
+        val email = p.getString(KEY_EMAIL, null)
+        val tipo = p.getString(KEY_TIPO, null)
+        // 👈 NO exigimos token, solo email + tipo
         return !email.isNullOrBlank() && !tipo.isNullOrBlank()
     }
 
-    fun cerrarSesion(context: Context) {
-        val prefs = context.getSharedPreferences("sesion", Context.MODE_PRIVATE)
-        prefs.edit().clear().apply()
-    }
+    fun obtenerEmail(context: Context): String? =
+        prefs(context).getString(KEY_EMAIL, null)
+
+    fun obtenerTipo(context: Context): String? =
+        prefs(context).getString(KEY_TIPO, null)
+
+    fun obtenerToken(context: Context): String? =
+        prefs(context).getString(KEY_TOKEN, null)
 }

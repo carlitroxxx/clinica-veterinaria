@@ -73,7 +73,7 @@ class MainActivity : ComponentActivity() {
                     bottomBar = {
                         if (sesionActiva) {
                             NavigationBar {
-                                when (tipoSesion) {
+                                when (tipoSesion?.lowercase()) {   // 👈 normalizamos aquí también
                                     "admin" -> {
                                         NavigationBarItem(
                                             selected = currentRoute == "adminHome",
@@ -126,6 +126,7 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                     }
+
                 ) { innerPadding ->
 
                     val startDestination = remember {
@@ -165,20 +166,45 @@ class MainActivity : ComponentActivity() {
                         }
 
                         composable("crearProfesional") {
-                            CrearProfesionalScreen(
-                                onGuardar = { prof ->
-                                    scope.launch {
-                                        try {
-                                            Repository.agregarProfesional(prof)
-                                            navController.popBackStack()
-                                        } catch (_: Exception) {
-                                            // Podrías mostrar un snackbar si quieres
+                            var errorCrear by remember { mutableStateOf<String?>(null) }
+
+                            Box(Modifier.fillMaxSize()) {
+                                CrearProfesionalScreen(
+                                    onGuardar = { prof ->
+                                        scope.launch {
+                                            val res = Repository.agregarProfesional(prof)
+                                            if (res.ok) {
+                                                errorCrear = null
+                                                navController.popBackStack()
+                                            } else {
+                                                // Mostramos el mensaje que viene del backend o genérico
+                                                errorCrear = res.mensaje ?: "No se pudo crear el profesional"
+                                            }
                                         }
+                                    },
+                                    onCancelar = { navController.popBackStack() }
+                                )
+
+                                // Cajita de error abajo
+                                errorCrear?.let { msg ->
+                                    Surface(
+                                        color = MaterialTheme.colorScheme.errorContainer,
+                                        tonalElevation = 4.dp,
+                                        modifier = Modifier
+                                            .align(Alignment.BottomCenter)
+                                            .fillMaxWidth()
+                                            .padding(16.dp)
+                                    ) {
+                                        Text(
+                                            text = msg,
+                                            color = MaterialTheme.colorScheme.onErrorContainer,
+                                            modifier = Modifier.padding(12.dp)
+                                        )
                                     }
-                                },
-                                onCancelar = { navController.popBackStack() }
-                            )
+                                }
+                            }
                         }
+
 
                         composable(
                             "modificarProfesional/{rut}",

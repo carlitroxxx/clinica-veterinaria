@@ -28,23 +28,27 @@ import com.example.clinicaveterinaria.data.Repository
 import com.example.clinicaveterinaria.data.SesionManager
 import com.example.clinicaveterinaria.model.Cliente
 import com.example.clinicaveterinaria.util.RutUtils
-
+import kotlinx.coroutines.launch
 
 @Composable
 fun CrearClienteRoute(nav: NavHostController) {
-    val ctx = androidx.compose.ui.platform.LocalContext.current
     var error by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
 
     CrearClienteScreen(
         onGuardar = { c ->
-            val res = Repository.agregarCliente(c)
-            if (res.ok) {
-                SesionManager.iniciarSesion(ctx, c.email, "cliente")
-                nav.navigate("clienteAgregarMascota/${c.rut}") {
-                    popUpTo("login") { inclusive = true }
+            scope.launch {
+                error = null
+                // AQUÍ EL CAMBIO: usar agregarCliente
+                val res = Repository.agregarCliente(c)
+                if (res.ok) {
+                    // Cliente creado en el backend → vamos a registrar la mascota
+                    nav.navigate("clienteAgregarMascota/${c.rut}") {
+                        popUpTo("login") { inclusive = true }
+                    }
+                } else {
+                    error = res.mensaje ?: "No se pudo crear el cliente"
                 }
-            } else {
-                error = res.mensaje ?: "No se pudo guardar"
             }
         },
         onCancelar = { nav.popBackStack() },

@@ -1,6 +1,6 @@
 package com.example.clinicaveterinaria.ui.cliente
 
-import android.annotation.SuppressLint
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -23,6 +23,7 @@ import com.example.clinicaveterinaria.R
 import com.example.clinicaveterinaria.data.Repository
 import com.example.clinicaveterinaria.ui.mascota.MascotaViewModel
 import com.example.clinicaveterinaria.ui.mascota.TipoAnimalDropdown
+import kotlinx.coroutines.launch
 
 data class MascotaForm(
     val clienteRut: String,
@@ -39,17 +40,27 @@ fun CrearMascotaRoute(
     clienteRut: String,
     onGuardarMascota: (MascotaForm) -> Unit = { }
 ) {
+    val scope = rememberCoroutineScope()
+    var error by remember { mutableStateOf<String?>(null) }
+
     CrearMascotaScreen(
         clienteRut = clienteRut,
         onGuardar = { form ->
-            val res = Repository.agregarMascota(form)
-            if (res.ok) {
-                nav.navigate("clienteProfesionales") {
-                    popUpTo("clienteProfesionales") { inclusive = true }
+            scope.launch {
+                error = null
+                val res = Repository.agregarMascota(form)
+                if (res.ok) {
+                    onGuardarMascota(form)
+                    nav.navigate("clienteProfesionales") {
+                        popUpTo("clienteProfesionales") { inclusive = true }
+                    }
+                } else {
+                    error = res.mensaje ?: "No se pudo guardar la mascota"
                 }
             }
         },
-        onCancelar = { nav.popBackStack() }
+        onCancelar = { nav.popBackStack() },
+        errorMessage = error
     )
 }
 
@@ -59,9 +70,9 @@ fun CrearMascotaScreen(
     clienteRut: String,
     onGuardar: (MascotaForm) -> Unit,
     onCancelar: () -> Unit,
+    errorMessage: String? = null,
     viewModel: MascotaViewModel = viewModel()
 ) {
-
     // Cargar API externa al iniciar
     LaunchedEffect(Unit) {
         viewModel.cargarTiposAnimal()
@@ -83,7 +94,6 @@ fun CrearMascotaScreen(
     val fechaOk = fechaNac.isBlank() || Regex("""^\d{4}-\d{2}-\d{2}$""").matches(fechaNac)
     val formOk = nombreOk && especieOk && fechaOk
 
-    var expEspecie by rememberSaveable { mutableStateOf(false) }
     var expSexo by rememberSaveable { mutableStateOf(false) }
 
     val colorPrincipal = Color(0xFF00AAB0)
@@ -178,7 +188,6 @@ fun CrearMascotaScreen(
                 )
             }
 
-
             // RAZA
             item {
                 OutlinedTextField(
@@ -231,9 +240,25 @@ fun CrearMascotaScreen(
                     onValueChange = { fechaNac = it },
                     label = { Text("Fecha de nacimiento (opcional)") },
                     placeholder = { Text("AAAA-MM-DD") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth(),
+                    isError = !fechaOk && fechaNac.isNotEmpty(),
+                    supportingText = {
+                        if (!fechaOk && fechaNac.isNotEmpty()) Text("Formato esperado: AAAA-MM-DD")
+                    },
                     colors = fieldColors
                 )
+            }
+
+            // Error del backend (si hay)
+            if (errorMessage != null) {
+                item {
+                    Text(
+                        text = errorMessage,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
             }
 
             // BOTONES

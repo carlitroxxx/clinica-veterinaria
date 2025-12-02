@@ -187,8 +187,47 @@ object Repository {
         }
     }
 
-    // Para la agenda del profesional podríamos después usar:
-    // api.getReservasProfesionalEnFecha(...) y api.actualizarEstadoReserva(...)
-    // y adaptarlo a HomeProfesionalScreen, pero si quieres mantener esto simple
-    // podemos dejar la agenda en "modo demo" o hacerlo en un siguiente paso.
+    // ========= PROFESIONAL extra =========
+
+    suspend fun obtenerProfesionalPorEmail(email: String): Profesional? {
+        if (email.isBlank()) return null
+        return try {
+            api.getProfesionalPorEmail(email)
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+// ========= RESERVAS para profesional =========
+
+    suspend fun obtenerReservasProfesionalEn(
+        rutProfesional: String,
+        fecha: String
+    ): List<Reserva> {
+        if (rutProfesional.isBlank() || fecha.isBlank()) return emptyList()
+        return try {
+            api.getReservasProfesionalEn(rutProfesional, fecha)
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
+    suspend fun actualizarEstadoReserva(
+        idReserva: Long,
+        estadoNuevo: String
+    ): Boolean {
+        if (idReserva <= 0) return false
+        return try {
+            api.actualizarEstadoReserva(
+                idReserva,
+                EstadoReservaRequest(estadoNuevo = estadoNuevo)
+            )
+            true
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+
+
 }

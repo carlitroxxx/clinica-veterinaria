@@ -16,10 +16,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.clinicaveterinaria.data.Repository
 import com.example.clinicaveterinaria.data.SesionManager
+import com.example.clinicaveterinaria.model.Profesional
+import com.example.clinicaveterinaria.model.Reserva
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-
 
 enum class EstadoAtencion { PENDIENTE, REALIZADA, CANCELADA }
 
@@ -31,64 +33,79 @@ data class ReservaUi(
     val mascota: String = "—",
     val estado: EstadoAtencion
 )
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeProfesionalScreen() {
-    var mostrarDialogRegistrar by remember { mutableStateOf(false) }
-    var mostrarDialogDetalle by remember { mutableStateOf(false) }
     val ctx = androidx.compose.ui.platform.LocalContext.current
+    val scope = rememberCoroutineScope()
+
+    // ====== SESIÓN Y PROFESIONAL ======
     val emailSesion = remember { SesionManager.obtenerEmail(ctx) }
-    val profesional = remember(emailSesion) {
-        emailSesion?.let { Repository.obtenerProfesionalPorEmail(it) }
+    var profesional by remember { mutableStateOf<Profesional?>(null) }
+
+    LaunchedEffect(emailSesion) {
+        profesional = emailSesion?.let { Repository.obtenerProfesionalPorEmail(it) }
     }
+
     val rutProfesional = profesional?.rut
 
+    // ====== FECHA DE HOY ======
     val hoy = remember {
         SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
     }
+
+    // ====== RESERVAS HOY ======
     var reservasUi by remember { mutableStateOf<List<ReservaUi>>(emptyList()) }
     var cargando by remember { mutableStateOf(true) }
 
     LaunchedEffect(rutProfesional, hoy) {
         cargando = true
-        reservasUi = if (rutProfesional != null) {
-            Repository.obtenerReservasProfesionalEn(rutProfesional, hoy).map { r ->
+        reservasUi = if (!rutProfesional.isNullOrBlank()) {
+            val reservas: List<Reserva> = Repository.obtenerReservasProfesionalEn(rutProfesional, hoy)
+            reservas.map { r ->
                 val estadoEnum = when (r.estado.trim().lowercase()) {
                     "realizada" -> EstadoAtencion.REALIZADA
                     "cancelada" -> EstadoAtencion.CANCELADA
                     else -> EstadoAtencion.PENDIENTE
                 }
-                val mascotaNombre = Repository.obtenerMascotaNombrePorReserva(r.id) ?: "—"
 
                 ReservaUi(
                     id = r.id,
                     hora = r.hora,
-                    paciente = r.clienteNombre,
+                    paciente = r.clienteRut,   // ahora compila
                     servicio = r.servicio,
-                    mascota = mascotaNombre,
+                    mascota = "—",
                     estado = estadoEnum
                 )
-            }
-        } else emptyList()
-
+            }.sortedBy { it.hora }
+        } else {
+            emptyList()
+        }
         cargando = false
     }
 
+
+    // ====== FILTRO POR ESTADO ======
     val opciones = listOf("TODAS", "PENDIENTE", "REALIZADA", "CANCELADA")
     var filtroSeleccionado by rememberSaveable { mutableStateOf(opciones.first()) }
     var dropdownAbierto by remember { mutableStateOf(false) }
-
 
     val reservasFiltradas = remember(filtroSeleccionado, reservasUi) {
         if (filtroSeleccionado == "TODAS") reservasUi
         else reservasUi.filter { it.estado.name == filtroSeleccionado }
     }
 
+    // ====== SELECCIÓN / DIÁLOGOS ======
+    var mostrarDialogRegistrar by remember { mutableStateOf(false) }
+    var mostrarDialogDetalle by remember { mutableStateOf(false) }
     var reservaSel by remember { mutableStateOf<ReservaUi?>(null) }
+
     val pacienteSel = reservaSel?.paciente ?: "—"
     val horaSel = reservaSel?.hora ?: "—"
     val servicioSel = reservaSel?.servicio ?: "—"
 
+    // ====== COLORES ======
     val colorPrincipal = Color(0xFF00AAB0)
     val colorFondoCampo = Color(0xFFF7FCFC)
     val textFieldColors = TextFieldDefaults.colors(
@@ -119,6 +136,7 @@ fun HomeProfesionalScreen() {
                 .padding(innerPadding),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            // Filtro por estado
             ExposedDropdownMenuBox(
                 expanded = dropdownAbierto,
                 onExpandedChange = { dropdownAbierto = !dropdownAbierto },
@@ -152,6 +170,8 @@ fun HomeProfesionalScreen() {
                     }
                 }
             }
+
+            // Lista de reservas
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -160,137 +180,159 @@ fun HomeProfesionalScreen() {
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-
-                when{
+                when {
                     cargando -> {
-                        CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                        CircularProgressIndicator(
+                            modifier = Modifier.align(Alignment.CenterHorizontally)
+                        )
                     }
-                    reservasFiltradas.isEmpty() ->{
+
+                    reservasFiltradas.isEmpty() -> {
                         Text(
                             "No hay reservas para este filtro",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.align(Alignment.CenterHorizontally)
                         )
-                    }else -> {
-                    reservasFiltradas.forEach { r ->
+                    }
 
-                        val (chipColor, chipBorder, chipLabelColor) = when (r.estado) {
-                            EstadoAtencion.REALIZADA -> Triple(colorPrincipal.copy(alpha = 0.1f), null, colorPrincipal)
-                            EstadoAtencion.CANCELADA -> Triple(Color.LightGray.copy(alpha = 0.2f), null, Color.Gray)
-                            EstadoAtencion.PENDIENTE -> Triple(colorFondoCampo, BorderStroke(1.dp, colorPrincipal), colorPrincipal)
-                        }
+                    else -> {
+                        reservasFiltradas.forEach { r ->
+                            val (chipColor, chipBorder, chipLabelColor) = when (r.estado) {
+                                EstadoAtencion.REALIZADA ->
+                                    Triple(colorPrincipal.copy(alpha = 0.1f), null, colorPrincipal)
 
-                        Card(
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant
-                            )
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 8.dp, horizontal = 12.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    r.hora,
-                                    style = MaterialTheme.typography.titleLarge,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = colorPrincipal
+                                EstadoAtencion.CANCELADA ->
+                                    Triple(Color.LightGray.copy(alpha = 0.2f), null, Color.Gray)
+
+                                EstadoAtencion.PENDIENTE ->
+                                    Triple(
+                                        colorFondoCampo,
+                                        BorderStroke(1.dp, colorPrincipal),
+                                        colorPrincipal
+                                    )
+                            }
+
+                            Card(
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant
                                 )
-                                Column(
-                                    Modifier
-                                        .weight(1f)
-                                        .padding(end = 8.dp, start = 20.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 8.dp, horizontal = 12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
-                                        "  ${r.paciente}",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.SemiBold
+                                        r.hora,
+                                        style = MaterialTheme.typography.titleLarge,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = colorPrincipal
                                     )
-                                    Spacer(Modifier.height(2.dp))
-                                    Text(
-                                        " · ${r.servicio}",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    Column(
+                                        Modifier
+                                            .weight(1f)
+                                            .padding(end = 8.dp, start = 20.dp)
+                                    ) {
+                                        Text(
+                                            "  ${r.paciente}",
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                        Spacer(Modifier.height(2.dp))
+                                        Text(
+                                            " · ${r.servicio}",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                    AssistChip(
+                                        onClick = {},
+                                        label = { Text(r.estado.name) },
+                                        colors = AssistChipDefaults.assistChipColors(
+                                            containerColor = chipColor,
+                                            labelColor = chipLabelColor
+                                        ),
+                                        border = chipBorder
                                     )
                                 }
-                                AssistChip(
-                                    onClick = {},
-                                    label = { Text(r.estado.name) },
-                                    colors = AssistChipDefaults.assistChipColors(
-                                        containerColor = chipColor,
-                                        labelColor = chipLabelColor
-                                    ),
-                                    border = chipBorder
-                                )
-                            }
 
-                            Spacer(Modifier.height(6.dp))
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(bottom = 10.dp, start = 16.dp, end = 16.dp),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                OutlinedButton(
-                                    onClick = {
-                                        reservaSel = r
-                                        mostrarDialogDetalle = true
-                                    },
-                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
-                                    modifier = Modifier.weight(1f),
-                                    shape = RoundedCornerShape(8.dp),
-                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = colorPrincipal),
-                                    border = ButtonDefaults.outlinedButtonBorder.copy(brush = SolidColor(colorPrincipal))
-                                ) { Text("Detalle", maxLines = 1, softWrap = false) }
-
-                                if (r.estado == EstadoAtencion.PENDIENTE) {
-                                    Button(
+                                Spacer(Modifier.height(6.dp))
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(bottom = 10.dp, start = 16.dp, end = 16.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    OutlinedButton(
                                         onClick = {
                                             reservaSel = r
-                                            mostrarDialogRegistrar = true
+                                            mostrarDialogDetalle = true
                                         },
                                         contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
-                                        shape = RoundedCornerShape(8.dp),
                                         modifier = Modifier.weight(1f),
-                                        colors = ButtonDefaults.buttonColors(containerColor = colorPrincipal)
-                                    ) { Text("Registrar", maxLines = 1, softWrap = false) }
+                                        shape = RoundedCornerShape(8.dp),
+                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = colorPrincipal),
+                                        border = ButtonDefaults.outlinedButtonBorder.copy(
+                                            brush = SolidColor(colorPrincipal)
+                                        )
+                                    ) {
+                                        Text("Detalle", maxLines = 1, softWrap = false)
+                                    }
+
+                                    if (r.estado == EstadoAtencion.PENDIENTE) {
+                                        Button(
+                                            onClick = {
+                                                reservaSel = r
+                                                mostrarDialogRegistrar = true
+                                            },
+                                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                                            shape = RoundedCornerShape(8.dp),
+                                            modifier = Modifier.weight(1f),
+                                            colors = ButtonDefaults.buttonColors(containerColor = colorPrincipal)
+                                        ) {
+                                            Text("Registrar", maxLines = 1, softWrap = false)
+                                        }
+                                    }
                                 }
                             }
-
                         }
                     }
-                }
                 }
             }
         }
     }
 
+    // ====== DIALOGOS ======
+
     if (mostrarDialogRegistrar && reservaSel != null) {
         RegistrarAtencionFormDialog(
             titulo = "Registrar atención",
-            subtitulo = "${reservaSel!!.paciente} • ${reservaSel!!.servicio} — ${reservaSel!!.hora}",
+            subtitulo = "$pacienteSel • $servicioSel — $horaSel",
             onDismiss = { mostrarDialogRegistrar = false },
             onGuardar = { form ->
-                val ok = Repository.actualizarEstadoReserva(reservaSel!!.id, form.estado)
-
-                if (ok) {
-                    val nuevoEstado = when (form.estado.trim().lowercase()) {
-                        "realizada" -> EstadoAtencion.REALIZADA
-                        "cancelada" -> EstadoAtencion.CANCELADA
-                        else -> EstadoAtencion.PENDIENTE
+                scope.launch {
+                    val ok = Repository.actualizarEstadoReserva(
+                        idReserva = reservaSel!!.id,
+                        estadoNuevo = form.estado
+                    )
+                    if (ok) {
+                        val nuevoEstado = when (form.estado.trim().lowercase()) {
+                            "realizada" -> EstadoAtencion.REALIZADA
+                            "cancelada" -> EstadoAtencion.CANCELADA
+                            else -> EstadoAtencion.PENDIENTE
+                        }
+                        reservasUi = reservasUi.map { r ->
+                            if (r.id == reservaSel!!.id) r.copy(estado = nuevoEstado) else r
+                        }
                     }
-                    reservasUi = reservasUi.map { r ->
-                        if (r.id == reservaSel!!.id) r.copy(estado = nuevoEstado) else r
-                    }
+                    mostrarDialogRegistrar = false
                 }
-                mostrarDialogRegistrar = false
             }
         )
     }
-
 
     if (mostrarDialogDetalle && reservaSel != null) {
         DetalleReservaDialog(
@@ -301,7 +343,6 @@ fun HomeProfesionalScreen() {
             onCerrar = { mostrarDialogDetalle = false }
         )
     }
-
 }
 
 @Composable
