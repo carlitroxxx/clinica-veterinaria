@@ -73,7 +73,7 @@ class MainActivity : ComponentActivity() {
                     bottomBar = {
                         if (sesionActiva) {
                             NavigationBar {
-                                when (tipoSesion?.lowercase()) {   // 👈 normalizamos aquí también
+                                when (tipoSesion?.lowercase()) {
                                     "admin" -> {
                                         NavigationBarItem(
                                             selected = currentRoute == "adminHome",
@@ -146,17 +146,14 @@ class MainActivity : ComponentActivity() {
                         modifier = Modifier.padding(innerPadding)
                     ) {
 
-                        // ---------- LOGIN ----------
                         composable("login") {
                             LoginScreen(navController, context)
                         }
 
-                        // Registro de cliente desde el login
                         composable("crearCliente") {
                             CrearClienteRoute(nav = navController)
                         }
 
-                        // ---------- ADMIN ----------
                         composable("adminHome") {
                             ListaProfesionalesScreen(navController)
                         }
@@ -177,7 +174,6 @@ class MainActivity : ComponentActivity() {
                                                 errorCrear = null
                                                 navController.popBackStack()
                                             } else {
-                                                // Mostramos el mensaje que viene del backend o genérico
                                                 errorCrear = res.mensaje ?: "No se pudo crear el profesional"
                                             }
                                         }
@@ -185,7 +181,6 @@ class MainActivity : ComponentActivity() {
                                     onCancelar = { navController.popBackStack() }
                                 )
 
-                                // Cajita de error abajo
                                 errorCrear?.let { msg ->
                                     Surface(
                                         color = MaterialTheme.colorScheme.errorContainer,
@@ -277,7 +272,6 @@ class MainActivity : ComponentActivity() {
                             }
                         }
 
-                        // ---------- PROFESIONAL ----------
                         composable("profesionalHome") {
                             HomeProfesionalScreen()
                         }
@@ -286,9 +280,6 @@ class MainActivity : ComponentActivity() {
                             PerfilProfesionalDoctorScreen(navController)
                         }
 
-                        // ---------- CLIENTE ----------
-
-                        // Lista de profesionales para el cliente
                         composable("clienteProfesionales") {
                             var profesionales by remember { mutableStateOf<List<ProfesionalUi>>(emptyList()) }
 
@@ -322,7 +313,6 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
-                        // Perfil de un profesional visto por el cliente
                         composable(
                             "clientePerfilProfesional/{rut}",
                             arguments = listOf(navArgument("rut") { type = NavType.StringType })
@@ -384,7 +374,6 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
-                        // Agendar reserva
                         composable(
                             "clienteAgendar/{rut}",
                             arguments = listOf(navArgument("rut") { type = NavType.StringType })
@@ -480,7 +469,6 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
-                        // Mis reservas del cliente
                         composable("clienteMisReservas") {
                             val ctx = LocalContext.current
                             val emailSesion = SesionManager.obtenerEmail(ctx)
@@ -513,7 +501,7 @@ class MainActivity : ComponentActivity() {
                                         id = r.id.toString(),
                                         fecha = r.fecha,
                                         hora = r.hora,
-                                        profesional = r.profesionalRut, // simple: mostramos RUT
+                                        profesional = r.profesionalRut,
                                         servicio = r.servicio,
                                         estado = r.estado
                                     )
@@ -546,7 +534,6 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
-                        // Perfil cliente
                         composable("clientePerfil") {
                             val ctx = LocalContext.current
                             val emailSesion = SesionManager.obtenerEmail(ctx)
@@ -613,7 +600,6 @@ class MainActivity : ComponentActivity() {
                             }
                         }
 
-                        // Registrar mascota después de crear cliente
                         composable(
                             "clienteAgregarMascota/{rutCliente}",
                             arguments = listOf(navArgument("rutCliente") { type = NavType.StringType })

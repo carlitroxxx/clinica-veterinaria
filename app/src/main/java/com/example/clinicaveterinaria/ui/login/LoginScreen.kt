@@ -90,7 +90,6 @@ fun LoginScreen(nav: NavHostController, context: Context) {
 
         Spacer(modifier = Modifier.height(28.dp))
 
-        // BOTÓN INGRESAR
         Button(
             onClick = {
                 scope.launch {
@@ -105,14 +104,13 @@ fun LoginScreen(nav: NavHostController, context: Context) {
 
                     cargando = true
                     try {
-                        // 1) Intentar login como CLIENTE (vía backend)
                         val cliente = Repository.obtenerClientePorEmail(emailTrim)
                         if (cliente != null && cliente.contrasena == passTrim) {
                             SesionManager.iniciarSesion(
                                 context = context,
                                 email = cliente.email,
                                 tipo = "cliente",
-                                token = null  // Por ahora sin JWT
+                                token = null
                             )
                             nav.navigate("clienteProfesionales") {
                                 popUpTo("login") { inclusive = true }
@@ -121,7 +119,6 @@ fun LoginScreen(nav: NavHostController, context: Context) {
                             return@launch
                         }
 
-                        // 2) Admin hardcodeado
                         if (emailTrim == "admin@correo.cl" && passTrim == "1234") {
                             SesionManager.iniciarSesion(
                                 context = context,
@@ -136,7 +133,6 @@ fun LoginScreen(nav: NavHostController, context: Context) {
                             return@launch
                         }
 
-                        // 3) Intentar login como PROFESIONAL (usando Repository.validarProfesional)
                         val esProfesional = Repository.validarProfesional(emailTrim, passTrim)
                         if (esProfesional) {
                             SesionManager.iniciarSesion(
@@ -152,7 +148,6 @@ fun LoginScreen(nav: NavHostController, context: Context) {
                             return@launch
                         }
 
-                        // 4) Si nada resultó → credenciales inválidas
                         mensaje = "Credenciales inválidas ❌"
                     } catch (e: Exception) {
                         mensaje = "Error al conectar con el servidor"

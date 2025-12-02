@@ -78,7 +78,6 @@ fun MisReservasScreen(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // OJO: sin key para evitar crash por IDs duplicadas
                 items(reservas) { reserva ->
                     ReservaCard(
                         reserva = reserva,

@@ -50,7 +50,6 @@ fun PerfilProfesionalScreen(nav: NavHostController) {
     val emailSesion = remember { SesionManager.obtenerEmail(context) }
     val tipoSesion = remember { SesionManager.obtenerTipo(context) }
 
-    // Si no es profesional logueado, mandar a login
     LaunchedEffect(emailSesion, tipoSesion) {
         if (emailSesion == null || tipoSesion != "profesional") {
             nav.navigate("login") { popUpTo(0) { inclusive = true } }
@@ -61,7 +60,6 @@ fun PerfilProfesionalScreen(nav: NavHostController) {
     var cargando by remember { mutableStateOf(true) }
     var errorCarga by remember { mutableStateOf<String?>(null) }
 
-    // Cargar datos del profesional desde el backend
     LaunchedEffect(emailSesion) {
         if (emailSesion.isNullOrBlank()) {
             cargando = false
@@ -89,7 +87,6 @@ fun PerfilProfesionalScreen(nav: NavHostController) {
         disabledTextColor = MaterialTheme.colorScheme.onSurface
     )
 
-    // Estados de edición (se inicializan cuando ya tenemos profesional)
     var editando by rememberSaveable { mutableStateOf(false) }
     var nombres by rememberSaveable { mutableStateOf("") }
     var apellidos by rememberSaveable { mutableStateOf("") }
@@ -103,7 +100,6 @@ fun PerfilProfesionalScreen(nav: NavHostController) {
 
     var mensajeErrorUpdate by remember { mutableStateOf<String?>(null) }
 
-    // Cuando cambia el profesional (se carga desde backend), poblar campos
     LaunchedEffect(profesional?.rut) {
         profesional?.let { p ->
             nombres = p.nombres
@@ -160,7 +156,6 @@ fun PerfilProfesionalScreen(nav: NavHostController) {
 
         when {
             cargando -> {
-                // Pantalla de carga
                 Box(
                     modifier = Modifier
                         .padding(paddingValues)
@@ -172,7 +167,6 @@ fun PerfilProfesionalScreen(nav: NavHostController) {
             }
 
             profesional == null -> {
-                // No se pudo cargar el profesional
                 Column(
                     modifier = Modifier
                         .padding(paddingValues)
@@ -199,7 +193,6 @@ fun PerfilProfesionalScreen(nav: NavHostController) {
             }
 
             else -> {
-                // Perfil cargado OK
                 Column(
                     modifier = Modifier
                         .padding(paddingValues)
@@ -343,7 +336,6 @@ fun PerfilProfesionalScreen(nav: NavHostController) {
                         ) {
                             OutlinedButton(
                                 onClick = {
-                                    // Restaurar valores originales desde el profesional actual
                                     profesional?.let { p ->
                                         nombres = p.nombres
                                         apellidos = p.apellidos

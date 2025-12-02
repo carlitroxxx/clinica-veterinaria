@@ -1,4 +1,3 @@
-// network/bd/MascotaApi.kt
 package com.example.clinicaveterinaria.network.bd
 
 import com.example.clinicaveterinaria.network.RetrofitInstance

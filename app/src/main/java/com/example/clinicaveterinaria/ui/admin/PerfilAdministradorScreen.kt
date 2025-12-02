@@ -30,7 +30,6 @@ fun PerfilAdministradorScreen(nav: NavHostController) {
     val context = LocalContext.current
     val email = SesionManager.obtenerEmail(context) ?: "admin@correo.cl"
 
-    // AHORA: se obtiene desde el backend (Repository.obtenerProfesionales())
     var totalProfesionales by remember { mutableStateOf(0) }
 
     LaunchedEffect(Unit) {
