@@ -41,7 +41,7 @@ data class DiaCalendario(
 
 private fun generarProximos7Dias(): List<DiaCalendario> {
     val locale = Locale("es", "ES")
-    val cal = Calendar.getInstance() // hoy
+    val cal = Calendar.getInstance()
     val sdfIso = SimpleDateFormat("yyyy-MM-dd", Locale.US)
     val sdfNombre = SimpleDateFormat("EEE", locale)
     val sdfNum = SimpleDateFormat("d", locale)
@@ -121,7 +121,6 @@ fun AgendarScreen(
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
 
-            //Info profesional
             if (!profesionalNombre.isNullOrBlank() || !profesionalEspecialidad.isNullOrBlank()) {
                 InfoProfesionalCard(
                     nombre = profesionalNombre ?: "Profesional",
@@ -180,7 +179,6 @@ fun AgendarScreen(
                 Text("Confirmar Reserva")
             }
 
-            // Feedback
             if (mensajeError != null) {
                 Text(mensajeError, color = MaterialTheme.colorScheme.error)
             }
@@ -278,7 +276,6 @@ private fun GrillaDeHoras(
 ) {
     val colorPrincipal = Color(0xFF00AAB0)
 
-    // Estado vacío
     if (horarios.isEmpty()) {
         Box(
             modifier = modifier
@@ -296,7 +293,6 @@ private fun GrillaDeHoras(
         return
     }
 
-    // Grid de horas
     LazyVerticalGrid(
         columns = GridCells.Adaptive(minSize = 90.dp),
         modifier = modifier.height(200.dp),

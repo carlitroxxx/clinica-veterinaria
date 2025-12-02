@@ -4,8 +4,6 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 object AnimalTypesRetrofitClient {
-
-    // REEMPLAZA <usuario> Y <repo> POR LOS TUYOS
     private const val BASE_URL =
         "https://raw.githubusercontent.com/mvrtinnbz/Animal-Api/refs/heads/main/"
 

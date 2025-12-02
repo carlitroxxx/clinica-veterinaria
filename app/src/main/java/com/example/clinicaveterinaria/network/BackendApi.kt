@@ -12,8 +12,7 @@ import retrofit2.http.PUT
 import retrofit2.http.Path
 import retrofit2.http.Query
 
-// Si ya los tienes en otro archivo, NO los dupliques.
-// Déjalos solo una vez.
+
 data class CrearReservaRequest(
     val clienteRut: String,
     val profesionalRut: String,
@@ -28,7 +27,6 @@ data class EstadoReservaRequest(
 
 interface BackendApi {
 
-    // ========== CLIENTES ==========
 
     @POST("clientes")
     suspend fun crearCliente(
@@ -40,7 +38,6 @@ interface BackendApi {
         @Path("email") email: String
     ): Cliente
 
-    // (Opcionales, por si los quieres usar después)
     @GET("clientes")
     suspend fun getClientes(): List<Cliente>
 
@@ -61,7 +58,6 @@ interface BackendApi {
     )
 
 
-    // ========== PROFESIONALES ==========
 
     @GET("profesionales")
     suspend fun getProfesionales(): List<Profesional>
@@ -93,10 +89,7 @@ interface BackendApi {
     )
 
 
-    // ========== MASCOTAS ==========
 
-    // Usamos MascotaForm como body porque tu Repository ya lo llama así.
-    // En backend tienes MascotaRequest, pero mientras los campos se llamen igual, funciona.
     @POST("mascotas")
     suspend fun crearMascota(
         @Body request: MascotaForm
@@ -107,14 +100,11 @@ interface BackendApi {
         @Path("rutCliente") rutCliente: String
     ): Boolean
 
-    // (Opcional, por si luego quieres listar las mascotas)
     @GET("mascotas/cliente/{rutCliente}")
     suspend fun getMascotasPorCliente(
         @Path("rutCliente") rutCliente: String
-    ): List<Any> // cámbialo a tu modelo Mascota cuando lo agregues al frontend
+    ): List<Any>
 
-
-    // ========== RESERVAS ==========
 
     @POST("reservas")
     suspend fun crearReserva(

@@ -1,4 +1,3 @@
-// network/bd/ClienteApi.kt
 package com.example.clinicaveterinaria.network.bd
 
 import com.example.clinicaveterinaria.model.Cliente
